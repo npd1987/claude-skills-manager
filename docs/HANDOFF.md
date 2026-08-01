@@ -1,8 +1,8 @@
 # Handoff
 
-**As of 2026-08-01 · v1.0.1**
+**As of 2026-08-01 · v1.1.0**
 
-> **Check this stamp first.** If `package.json` no longer reads 1.0.1, or if
+> **Check this stamp first.** If `package.json` no longer reads 1.1.0, or if
 >
 > ```bash
 > git log -1 --format=%h -- docs/HANDOFF.md
@@ -37,13 +37,17 @@ It began as a Windows-only personal tool and was made cross-platform, packaged,
 and given a supported way for other people to fork and modify it from inside the
 app itself.
 
-**The version on npm is behind the repository.** npm's latest is 1.0.1, and
-1.0.1 is also what `package.json` says, but `main` now carries the whole
-Settings and updates feature described below, committed and pushed to GitHub.
-Nothing has been bumped or published to npm. **A version bump is the next
-decision**, and it should happen before publishing, not after: the app reports
-its own `package.json` version, so an unbumped publish would leave every
-installed copy unable to tell the two apart.
+**The version on npm is behind the repository.** `package.json` and the
+`v1.1.0` tag both read 1.1.0, and the GitHub release for it is published, but
+npm's latest is still 1.0.1. **`npm publish` has not been run**, and cannot be
+run from a session: the account uses a passkey, so it needs the account holder
+at a browser (see *Traps*).
+
+Until that happens the update feature is inert in the field. An installed 1.0.1
+copy asks npm, is told 1.0.1, and correctly reports itself up to date. The
+GitHub release exists but is never fetched, because notes are only requested
+when npm says there is something newer. Publishing to npm is the single action
+that switches the whole feature on for everybody.
 
 ---
 
@@ -67,15 +71,15 @@ version it was checked at.
 | Two copies side by side | ✅ Windows | Distinct ports, distinct names, three consecutive runs | 1.0.0 |
 | Data migration from legacy `data/` | ✅ | Sandboxed home; copies when empty, refuses to overwrite newer | 1.0.0 |
 | Icon containers (ICO/PNG/ICNS) | ✅ | Parsed by an independent reader, decoded visually | 1.0.0 |
-| Update check against live npm | ✅ Windows | Real request to the registry; compared, reported "up to date" correctly | unreleased |
-| Consent gate | ✅ Windows | First run asks; no request made until answered | unreleased |
-| Install-kind detection and button gate | ✅ | Every kind exercised against `installKind`; only `global` yields a button | unreleased |
-| Release-notes rendering, including injection | ✅ Windows | Seeded a body containing `<img onerror>`; rendered as literal text, zero elements created | unreleased |
-| GitHub release-fetch response shape | ✅ | Checked against a repo that publishes releases; **this repo has none**, so the live path here returns "no notes" | unreleased |
-| **Installing a version (forward or back)** | ❌ **Never run** | Only the pre-flight gate is exercised. No npm install has ever been performed by the detached child | unreleased |
-| Light and dark contrast | ✅ | Role colours computed against both light surfaces; all clear 4.5:1. Both themes viewed | unreleased |
-| Sidebar banners | ⚠️ Partial | Rendered from simulated state, not by really arming Default Claude mode | unreleased |
-| A copy's Settings, both options | ✅ Windows | Ran with a real marker pointing at a real folder; both commands rendered, and the missing-original case correctly withheld one | unreleased |
+| Update check against live npm | ✅ Windows | Real request to the registry; compared, reported "up to date" correctly | 1.1.0 |
+| Consent gate | ✅ Windows | First run asks; no request made until answered | 1.1.0 |
+| Install-kind detection and button gate | ✅ | Every kind exercised against `installKind`; only `global` yields a button | 1.1.0 |
+| Release-notes rendering, including injection | ✅ Windows | Seeded a body containing `<img onerror>`; rendered as literal text, zero elements created | 1.1.0 |
+| GitHub release-fetch response shape | ✅ | Checked against a repo that publishes releases, then against this repo's own `v1.1.0` release | 1.1.0 |
+| **Installing a version (forward or back)** | ❌ **Never run** | Only the pre-flight gate is exercised. No npm install has ever been performed by the detached child | 1.1.0 |
+| Light and dark contrast | ✅ | Role colours computed against both light surfaces; all clear 4.5:1. Both themes viewed | 1.1.0 |
+| Sidebar banners | ⚠️ Partial | Rendered from simulated state, not by really arming Default Claude mode | 1.1.0 |
+| A copy's Settings, both options | ✅ Windows | Ran with a real marker pointing at a real folder; both commands rendered, and the missing-original case correctly withheld one | 1.1.0 |
 
 **macOS has never run this.** If something breaks there it will be in the `.app`
 bundle, the `osascript` folder picker, or the `open -R` reveal. Linux is
@@ -172,11 +176,9 @@ Nothing is blocking. These are the open ends, roughly in order of value.
 - **Prove the installer.** See above. The way to do it is a real global install
   of an older version, then use the button to go forward. Nothing else in the
   repository is this untested.
-- **Version bump and publish.** The repository is ahead of npm by a whole
-  feature. Decide the number before publishing, not after.
-- **No GitHub Releases exist**, only a `v1.0.1` tag. The *What's new* panel is
-  built and works, but it has nothing to show until releases are published.
-  Publishing one for the next version is what switches the feature on.
+- **`npm publish` for 1.1.0.** Everything else for the release is done: version
+  bumped, tagged, GitHub release written. This is the one step left, it must be
+  run by the account holder, and until it runs nobody sees any of this.
 - **macOS and Linux verification.** The single biggest platform gap. Linux needs
   a WSL distro (~500 MB) or a container; the user deferred this once already, so
   ask rather than assume.
