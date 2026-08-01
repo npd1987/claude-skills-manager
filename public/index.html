@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Claude Skills</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <div>
+          <h1>Claude Skills</h1>
+          <p class="brand-sub" id="skills-path"></p>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="search">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <circle cx="9" cy="9" r="6" />
+            <path d="M13.5 13.5 L17 17" />
+          </svg>
+          <input id="search" type="search" placeholder="Search skills…" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="history-pair">
+          <button class="btn" id="undo" disabled>&#8630; Undo</button>
+          <button class="btn" id="redo" disabled>Redo &#8631;</button>
+        </div>
+        <button class="btn" id="refresh" title="Re-read everything from disk, and regroup the list">Refresh</button>
+        <button class="btn" id="quit" title="Stop Claude Skills and close it down">Quit</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="scopes" id="scopes" role="tablist" aria-label="Where skills live"></div>
+
+        <nav class="filters" id="filters"></nav>
+
+        <section class="master" id="master"></section>
+
+        <!-- "Modify this app", or "Your own copy" when this is already one.
+             Sits with the other whole-app controls, above anything that needs
+             attention — problems belong at the bottom, nearest the eye's last
+             stop. -->
+        <section id="copy-card"></section>
+
+        <section class="issues" id="issues"></section>
+      </aside>
+
+      <main class="main">
+        <div class="main-head">
+          <h2 id="view-title">All skills</h2>
+        </div>
+        <div id="content"></div>
+      </main>
+    </div>
+
+    <div class="drawer" id="drawer" hidden>
+      <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+        <header class="drawer-head">
+          <div>
+            <h3 id="drawer-title"></h3>
+            <p class="muted" id="drawer-sub"></p>
+          </div>
+          <button class="btn ghost" id="drawer-close" aria-label="Close">Close</button>
+        </header>
+        <pre class="drawer-body" id="drawer-body"></pre>
+      </div>
+    </div>
+
+    <div class="modal" id="modal" hidden>
+      <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <h3 id="modal-title"></h3>
+        <p id="modal-text"></p>
+        <div class="modal-actions">
+          <button class="btn ghost" id="modal-cancel">Cancel</button>
+          <button class="btn danger" id="modal-confirm">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Setup and Manage both live here; the body is built in app.js because
+         its shape changes as you move through the steps. -->
+    <div class="modal" id="setup" hidden>
+      <div class="modal-panel wide" role="dialog" aria-modal="true" aria-labelledby="setup-title">
+        <h3 id="setup-title"></h3>
+        <div id="setup-body"></div>
+      </div>
+    </div>
+
+    <div class="toasts" id="toasts"></div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

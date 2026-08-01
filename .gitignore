@@ -1,0 +1,19 @@
+# The app has no dependencies, but a fork might add tooling.
+node_modules/
+
+# Left over from before the app kept its state in ~/.claude/skills-manager.
+# Migrated automatically on first run; never wanted in the repository.
+data/
+
+# Local Claude Code settings — personal to whoever is working on the repo.
+.claude/settings.local.json
+
+# npm pack output
+*.tgz
+
+# Marks a copy someone made to modify; belongs to that copy, not the project.
+.claude-skills-copy.json
+
+# OS noise
+.DS_Store
+Thumbs.db

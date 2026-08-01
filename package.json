@@ -1,0 +1,50 @@
+{
+  "name": "claude-skills-manager",
+  "version": "1.0.0",
+  "displayName": "Claude Skills",
+  "description": "See and manage your Claude Code skills — turn them on, off, or slash-only without hand-editing settings.json",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "skills",
+    "cli",
+    "settings"
+  ],
+  "license": "MIT",
+  "author": "npd1987",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/npd1987/claude-skills-manager.git"
+  },
+  "homepage": "https://github.com/npd1987/claude-skills-manager#readme",
+  "bugs": {
+    "url": "https://github.com/npd1987/claude-skills-manager/issues"
+  },
+  "bin": {
+    "claude-skills-manager": "bin/claude-skills-manager.js"
+  },
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node bin/claude-skills-manager.js dev",
+    "install-shortcut": "node bin/claude-skills-manager.js install-shortcut",
+    "uninstall-shortcut": "node bin/claude-skills-manager.js uninstall-shortcut",
+    "make-icons": "node tools/make-icon.js"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "public",
+    "assets",
+    "tools",
+    "server.js",
+    "launch.vbs",
+    "install-shortcut.ps1",
+    "Skills.cmd",
+    "CLAUDE.md",
+    "CONTRIBUTING.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

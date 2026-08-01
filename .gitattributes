@@ -1,0 +1,16 @@
+# LF everywhere by default. The project is authored on Windows but runs on Mac
+# and Linux, where a shebang line ending in CRLF gives
+# "bad interpreter: /usr/bin/env node^M" — and nothing in that message points at
+# line endings. A catch-all keeps every checkout identical rather than depending
+# on each contributor's core.autocrlf.
+* text=auto eol=lf
+
+# Windows-only launchers, which want CRLF.
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.vbs text eol=crlf
+
+# Generated icons.
+*.ico binary
+*.icns binary
+*.png binary
