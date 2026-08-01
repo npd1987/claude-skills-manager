@@ -1,6 +1,6 @@
 'use strict';
 
-// Generates the app icon from scratch — a rounded square in the app's accent
+// Generates the app icon from scratch: a rounded square in the app's accent
 // gradient with a white "/" through it, for the slash commands skills provide.
 // Written by hand so the project keeps its zero-dependency promise:
 //
@@ -52,7 +52,7 @@ function segmentDistance(px, py, ax, ay, bx, by) {
 }
 
 /**
- * Renders one size as a top-down RGBA buffer — the layout PNG wants, and one
+ * Renders one size as a top-down RGBA buffer, which is the layout PNG wants, and one
  * short transform away from the bottom-up BGRA that ICO wants.
  */
 function renderRGBA(size) {

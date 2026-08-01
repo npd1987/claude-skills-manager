@@ -10,7 +10,7 @@ cd claude-skills-manager
 node server.js
 ```
 
-Node 18 or newer. There is nothing to install — see below.
+Node 18 or newer. There is nothing to install. See below.
 
 ## The one rule
 
@@ -24,7 +24,7 @@ Development-only tooling is a different conversation, but the bar is still high.
 
 ## Before opening a pull request
 
-[CLAUDE.md](CLAUDE.md) lists the invariants worth knowing — how settings are
+[CLAUDE.md](CLAUDE.md) lists the invariants worth knowing: how settings are
 written, why paths are compared the way they are, where OS-specific code
 belongs. It is written for Claude Code but it is the best short description of
 the codebase for anyone.

@@ -5,7 +5,7 @@ node_modules/
 # Migrated automatically on first run; never wanted in the repository.
 data/
 
-# Local Claude Code settings — personal to whoever is working on the repo.
+# Local Claude Code settings, personal to whoever is working on the repo.
 .claude/settings.local.json
 
 # npm pack output
