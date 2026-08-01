@@ -1,11 +1,16 @@
 # Handoff
 
-**As of 2026-08-01 · v1.0.1 · commit `aea7de5`**
+**As of 2026-08-01 · v1.0.1**
 
-> **Check this stamp first.** Compare it against `package.json` and
-> `git log -1 --format=%h`. If they disagree, this document describes an older
-> state — trust the repository over anything below, and regenerate it (see
-> *Keeping this file honest*).
+> **Check this stamp first.** If `package.json` no longer reads 1.0.1, or
+> `git log --oneline --since=2026-08-01` shows commits that touched anything
+> outside `docs/`, then this document describes an older state — trust the
+> repository over anything below, and regenerate it (see *Keeping this file
+> honest*).
+>
+> Deliberately no commit SHA: a stamp can never name the commit that writes it,
+> so exact-SHA matching would report a false staleness forever. Date plus
+> version is checkable and does not lie.
 
 Nothing here restates the code. Structure and invariants live in
 [CLAUDE.md](../CLAUDE.md); how to install and use it lives in

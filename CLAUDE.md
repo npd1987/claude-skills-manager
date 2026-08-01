@@ -111,8 +111,9 @@ the traps that are not invariants. When asked to **"do the handoff document"**:
    `git status`. Never carry a claim forward without checking it.
 2. **Regenerate every section**, rather than editing around what is there. Only
    the session log is append-only — add one line, newest first.
-3. **Restamp the header** with today's date, the version, and the short commit
-   SHA. That stamp is what lets the next session detect a stale file.
+3. **Restamp the header** with today's date and the current version. No commit
+   SHA — a stamp cannot name the commit that writes it, so matching on one
+   would report staleness forever. Date plus version is checkable and honest.
 4. **Write down only what the repository cannot say.** If a fact lives in this
    file, the README, or `git log`, link to it instead of copying it.
 5. **No line numbers, no code excerpts, no file trees.** They rot fastest, and
