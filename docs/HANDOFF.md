@@ -1,6 +1,6 @@
 # Handoff
 
-**As of 2026-08-01 · v1.0.1 · commit `39008d7`**
+**As of 2026-08-01 · v1.0.1 · commit `aea7de5`**
 
 > **Check this stamp first.** Compare it against `package.json` and
 > `git log -1 --format=%h`. If they disagree, this document describes an older
