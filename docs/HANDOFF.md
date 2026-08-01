@@ -37,17 +37,16 @@ It began as a Windows-only personal tool and was made cross-platform, packaged,
 and given a supported way for other people to fork and modify it from inside the
 app itself.
 
-**The version on npm is behind the repository.** `package.json` and the
-`v1.1.0` tag both read 1.1.0, and the GitHub release for it is published, but
-npm's latest is still 1.0.1. **`npm publish` has not been run**, and cannot be
-run from a session: the account uses a passkey, so it needs the account holder
-at a browser (see *Traps*).
+**1.1.0 is released.** Published to npm on 2026-08-01, tagged `v1.1.0`, with a
+GitHub release carrying the notes the app's *What's new* panel reads. Repository,
+tag, release and registry all agree.
 
-Until that happens the update feature is inert in the field. An installed 1.0.1
-copy asks npm, is told 1.0.1, and correctly reports itself up to date. The
-GitHub release exists but is never fetched, because notes are only requested
-when npm says there is something newer. Publishing to npm is the single action
-that switches the whole feature on for everybody.
+**The update feature cannot help anyone already on 1.0.1.** That version has no
+update UI at all, so it will never tell its users that 1.1.0 exists. Everyone on
+it has to arrive at 1.1.0 some other way, and only then does checking start
+working. This is inherent to shipping the feature rather than a fault, but it
+means adoption of 1.1.0 is invisible to the app itself, and the first version
+whose users get told about a successor is 1.1.0.
 
 ---
 
@@ -61,8 +60,8 @@ version it was checked at.
 | Server, API, token guard | ✅ Windows | Headless start, `/api/state`, page load, bad-token 403 | 1.0.1 |
 | Install from npm registry | ✅ Windows | Fresh install into a scratch dir, then run | 1.0.1 |
 | Install via `npx github:` | ✅ Windows | Clean run from the public repo | 1.0.0 |
-| Packed tarball contents | ⚠️ **Stale** | Was 26 files at 1.0.1; two lib files have been added since | 1.0.1 |
-| Line endings in the tarball | ✅ | LF on everything POSIX executes; CRLF on the Windows launchers | 1.0.0 |
+| Packed tarball contents | ✅ | 28 files, both new lib files present, 661 kB unpacked; confirmed against the published registry document | 1.1.0 |
+| Line endings in the tarball | ✅ | LF on everything POSIX executes; CRLF on the Windows launchers. Re-checked on the CLI entry point before publishing 1.1.0 | 1.1.0 |
 | Shortcut install/remove | ✅ Windows | Created under a custom name, target inspected, removed | 1.0.0 |
 | Shortcut install/remove | ⚠️ **Untested** on macOS and Linux | Generated `.plist` / `.desktop` contents checked only | 1.0.0 |
 | Folder picker, browser open, reveal | ⚠️ **Untested** on macOS and Linux | Code paths written to documented behaviour | 1.0.0 |
@@ -87,10 +86,13 @@ closable whenever someone sets up WSL or a container; macOS needs real hardware.
 
 **The installer is the biggest untested thing in the repository.** The detached
 child in `lib/apply-update.js` waits for the app to exit, runs npm, and writes a
-result file. Every part of that is written but none of it has been observed
-end to end, because doing so needs a real global npm install of a version that
-is not the current one. Until that is done, treat the button as unproven and say
-so if asked.
+result file. Every part of that is written but none of it has been observed end
+to end. Treat the button as unproven and say so if asked.
+
+Testing it was impossible until 1.1.0 shipped, because it needs two published
+versions and a global install to move between them. Both now exist, so the test
+is available and described under *Live threads*. Nothing blocks it any more
+except doing it.
 
 ---
 
@@ -176,9 +178,12 @@ Nothing is blocking. These are the open ends, roughly in order of value.
 - **Prove the installer.** See above. The way to do it is a real global install
   of an older version, then use the button to go forward. Nothing else in the
   repository is this untested.
-- **`npm publish` for 1.1.0.** Everything else for the release is done: version
-  bumped, tagged, GitHub release written. This is the one step left, it must be
-  run by the account holder, and until it runs nobody sees any of this.
+- **Prove the installer, which is now possible.** Before 1.1.0 was published
+  there was no way to do it. There is now: install 1.1.0 globally with
+  `npm i -g claude-skills-manager`, open Settings, and use the version history
+  to go back to 1.0.1. That is the same detached-installer path an update takes,
+  with a number that exists, so it exercises the whole thing end to end for the
+  first time. Going back to 1.1.0 afterwards is the same operation again.
 - **macOS and Linux verification.** The single biggest platform gap. Linux needs
   a WSL distro (~500 MB) or a container; the user deferred this once already, so
   ask rather than assume.
@@ -282,6 +287,9 @@ file is the opposite: durable, versioned, and regenerated in place.
 
 Append-only. One line each, newest first.
 
+- **2026-08-01, released.** Published 1.1.0 to npm, tagged it, and wrote the
+  GitHub release its own What's new panel reads. Verified the registry, the
+  tarball contents and the release fetch afterwards.
 - **2026-08-01, later.** Added updates: an opt-in version check against npm, an
   opt-in release-notes fetch from GitHub, version history with a way back to an
   older version, and an installer that runs detached after the app exits so npm
