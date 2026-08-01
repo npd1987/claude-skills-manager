@@ -1,6 +1,6 @@
 {
   "name": "claude-skills-manager",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "displayName": "Claude Skills",
   "description": "See and manage your Claude Code skills — turn them on, off, or slash-only without hand-editing settings.json",
   "keywords": [
