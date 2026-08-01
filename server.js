@@ -10,6 +10,8 @@ const settings = require('./lib/settings');
 const projects = require('./lib/projects');
 const platform = require('./lib/platform');
 const fork = require('./lib/fork');
+const updates = require('./lib/updates');
+const applyUpdate = require('./lib/apply-update');
 const { NAME, VERSION, displayName, installKind } = require('./lib/app-info');
 const {
   SKILLS_DIR, TRASH_DIR, SETTINGS_FILE, DATA_DIR, CLAUDE_DIR,
@@ -133,9 +135,22 @@ function stamp() {
 
 function state() {
   const scanned = skills.scan();
+  const copy = fork.readMarker();
   return {
     ...scanned,
     snapshot: readSnapshot(),
+    // Read from disk only. The check that talks to npm is a route the page
+    // calls, never something rebuilding this payload sets off, so no ordinary
+    // click ever waits on the network.
+    update: {
+      ...updates.status({ copy }),
+      // Whether a button can be offered, and if not, why not in words the page
+      // can show instead of an error nobody could have avoided.
+      apply: applyUpdate.preflight(),
+      // Left behind by the detached installer after the last quit, so the app
+      // reports on the install the moment it comes back up.
+      last: applyUpdate.readResult(),
+    },
     // The page titles itself from this, so a renamed copy is distinguishable
     // from the original when both are open. `copy` is null in an original and
     // describes the fork in one, which is what switches the sidebar card
@@ -146,7 +161,7 @@ function state() {
       name: displayName(),
       version: VERSION,
       dir: APP_DIR,
-      copy: fork.readMarker(),
+      copy,
       install: installKind(APP_DIR),
     },
     paths: { skills: SKILLS_DIR, settings: SETTINGS_FILE, trash: TRASH_DIR, claude: CLAUDE_DIR },
@@ -171,7 +186,7 @@ const routes = {
 
   // Sent by the page as it unloads. Closing the tab should not leave a server
   // running invisibly, so shut down shortly unless a page checks back in
-  // first — which is what a reload or a second tab does.
+  // first, which is what a reload or a second tab does.
   'POST /api/bye': async () => {
     lastSeen = Date.now() - IDLE_LIMIT_MS + GOODBYE_GRACE_MS;
     return { ok: true };
@@ -194,7 +209,7 @@ const routes = {
   /**
    * The single write path for settings. Default Claude mode rides along here
    * via `snapshot` rather than through a separate endpoint, so the saved
-   * snapshot and the settings it describes can never disagree — including
+   * snapshot and the settings it describes can never disagree, including
    * when the change arrives from undo or redo.
    */
   'POST /api/override': async (body) => {
@@ -288,7 +303,7 @@ const routes = {
     return { added: chosen.path, ...state() };
   },
 
-  // Same dialog as pick-folder, but purely a question — it adds nothing and
+  // Same dialog as pick-folder, but purely a question: it adds nothing and
   // changes nothing. Used when choosing where a copy of the app should go.
   'POST /api/choose-folder': async () => {
     const chosen = await platform.pickFolder();
@@ -334,6 +349,49 @@ const routes = {
       keepShortcut: !body || body.keepShortcut !== false,
     });
     return { ...result, ...state() };
+  },
+
+  /**
+   * Asks npm what the latest version is. The only outbound request this app
+   * makes, and the only route that makes it.
+   *
+   * `force` is the Check now button: pressing it is consent in itself, so it
+   * goes ahead whether or not the automatic check is switched on. Without it
+   * this does nothing unless the user has opted in and a day has passed, which
+   * is what lets the page call it on every load without checking every load.
+   */
+  'POST /api/updates/check': async (body) => {
+    await updates.check({ force: Boolean(body && body.force) });
+    return state();
+  },
+
+  'POST /api/updates/prefs': async (body) => {
+    if (!body || typeof body.autoCheck !== 'boolean') throw new Error('autoCheck must be true or false');
+    updates.setAutoCheck(body.autoCheck);
+    return state();
+  },
+
+  /**
+   * Installs a named version, forwards or back. Hands off to a detached process
+   * and then quits, because npm is about to replace the folder this server is
+   * running out of. The reply says the handover happened, not that the install
+   * worked; that answer is waiting in state() next time the app opens.
+   */
+  'POST /api/updates/apply': async (body) => {
+    const started = applyUpdate.start(body && body.version);
+    setTimeout(() => {
+      clearSession();
+      server.close();
+      process.exit(0);
+    }, 150);
+    return { ...started, quitting: true };
+  },
+
+  // Dismisses the report from the last install, so it is said once rather than
+  // every time the app opens from here on.
+  'POST /api/updates/seen': async () => {
+    applyUpdate.clearResult();
+    return state();
   },
 
   'POST /api/add-folder': async (body) => {
@@ -435,7 +493,7 @@ function clearSession() {
  * simply focus that window instead of starting a second server.
  *
  * The session file is per install (see lib/paths.js), so a modified copy of the
- * app never bows out to the original — otherwise launching your own version
+ * app never bows out to the original, because otherwise launching your own version
  * would silently reopen the one you were trying to replace.
  */
 async function findLiveInstance() {
@@ -482,7 +540,7 @@ server.on('listening', () => {
   lastSeen = Date.now();
   const idleTimer = setInterval(() => {
     if (Date.now() - lastSeen < IDLE_LIMIT_MS) return;
-    console.log('  No page open — shutting down.');
+    console.log('  No page open. Shutting down.');
     clearSession();
     process.exit(0);
   }, IDLE_CHECK_MS);
@@ -509,10 +567,14 @@ process.on('exit', clearSession);
 
 async function start() {
   migrateLegacyData();
+  // Noticed here rather than anywhere later, so that updating by hand from a
+  // terminal is recorded the same way as updating from the app. Either route
+  // ends with a launch running a version the last launch was not.
+  updates.noteVersion();
 
   const live = await findLiveInstance();
   if (live) {
-    console.log(`\n  ${NAME} is already running — opening it.\n`);
+    console.log(`\n  ${NAME} is already running. Opening it.\n`);
     openBrowser(live);
     process.exit(0);
   }

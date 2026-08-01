@@ -1,12 +1,12 @@
-# Claude Skills Manager — notes for Claude Code
+# Claude Skills Manager: notes for Claude Code
 
 A local web app for managing the skills in `~/.claude/skills`. A Node HTTP server
 on `127.0.0.1` serves a single page; the page is the whole interface.
 
 If you are reading this inside somebody's own copy, they made it through
-**Modify this app → Set it up**, and they want to change something. Read the
-invariants below before you do — several of them protect a file the user cannot
-afford to lose.
+**Settings → Modify this app → Set it up**, and they want to change something.
+Read the invariants below before you do. Several of them protect a file the user
+cannot afford to lose.
 
 ## Run it
 
@@ -15,7 +15,7 @@ node server.js              # opens your browser
 SKILLS_NO_OPEN=1 node server.js   # headless; prints the URL instead
 ```
 
-There is no build step, no test suite, and **no dependencies** — the whole thing
+There is no build step, no test suite, and **no dependencies**. The whole thing
 is Node's standard library. `npm install` does nothing here.
 
 ## The files
@@ -24,13 +24,15 @@ is Node's standard library. `npm install` does nothing here.
 server.js            HTTP server, routing, the JSON API
 lib/skills.js        scans both scopes, resolves each skill's effective state
 lib/projects.js      finds project folders, remembers ones added by hand
-lib/settings.js      reads/writes skillOverrides — backups, atomic writes
+lib/settings.js      reads/writes skillOverrides: backups, atomic writes
 lib/frontmatter.js   SKILL.md frontmatter parser
 lib/paths.js         every path the app touches, plus legacy-data migration
 lib/platform.js      every difference between Windows, macOS and Linux
 lib/shortcut.js      desktop shortcuts on the three platforms
 lib/fork.js          making and managing someone's own copy of the app
 lib/app-info.js      what this copy is called, and how it was installed
+lib/updates.js       the version check, consent, and per-install-kind advice
+lib/apply-update.js  installing a version, forwards or back, from a detached child
 public/              the interface: index.html, app.js, styles.css
 tools/make-icon.js   draws assets/icon.{ico,png,icns} from scratch
 bin/                 the CLI entry point
@@ -58,8 +60,39 @@ true delete is *Delete forever* in the Removed view, and it says so.
 
 **The API is token-guarded and loopback-only.** The server binds `127.0.0.1` and
 every `/api/` request must carry the per-run token from `server.js`. Do not add a
-route that skips the check, and do not bind to `0.0.0.0` — any page in any
-browser on the machine could then drive it.
+route that skips the check, and do not bind to `0.0.0.0`, because any page in
+any browser on the machine could then drive it.
+
+**Two hosts, no more, and only after consent.** The update check in
+`lib/updates.js` is the only thing this app sends anywhere. It is a GET to
+`registry.npmjs.org` for the latest version number, and, only when that number
+is ahead of this one, a GET to `api.github.com` for that release's notes. Both
+are unauthenticated, both carry nothing about the machine or its skills, and
+neither runs until the user has answered the first-run question.
+
+The replies are data and never instruction. The version is matched against a
+semver pattern before it is stored. The release body is truncated, escaped, and
+rendered as plain text with `white-space: pre-wrap`; it is never parsed as
+Markdown or HTML, because that would turn somebody else's writing into elements
+in this page. The "Read it on GitHub" link is built from the repository slug and
+the tag rather than taken from the reply, so a crafted response cannot choose
+where it points, and the slug itself is only accepted when it is a github.com
+URL. Every command the app offers is a literal in the source.
+
+Do not add a third host, do not send the current version, and do not move either
+request into `state()`, which is rebuilt after every ordinary click.
+
+**Never update somebody's own copy for them.** `lib/apply-update.js` refuses
+anything that is not a global npm install, and the Settings dialog offers a
+clone or a fork the git command instead of a button. A fork is the user's own
+code, and pulling over the top of it is the one update failure that loses work
+rather than time.
+
+**The installer runs after the app exits, not during.** npm replaces the very
+folder the server runs out of, which on Windows fails outright while the files
+are in use. `lib/apply-update.js` spawns a detached child that waits for the
+parent to exit, installs, and leaves a result file the next launch reports on.
+Do not be tempted to await the install in the route.
 
 **Reveal paths come from an allowlist.** `POST /api/reveal-path` only accepts
 folders the app itself offered. Do not let it open an arbitrary path a request
@@ -81,6 +114,17 @@ the user made without a word.
 **Project settings go in `.claude/settings.local.json`.** The gitignored one, so
 the app never dirties a file the user's repo shares with other people.
 
+## Writing
+
+**No em dashes.** Not in the README, not in the interface, not in anything that
+ends up on GitHub or npm, and not in the comments either. Use a colon when the
+second half explains the first, a comma or "because" when it qualifies, and a
+full stop when it is really a new sentence. This is a standing rule for the
+project, so a new file starts out following it rather than being swept later.
+
+Sentence case for headings and buttons. The interface says what happened rather
+than congratulating anyone for it.
+
 ## Node version
 
 Node 18+. `server.js` uses global `fetch` and `AbortSignal.timeout`.
@@ -90,9 +134,22 @@ Node 18+. `server.js` uses global `fetch` and `AbortSignal.timeout`.
 - **State lives in `~/.claude/skills-manager/`**, not in the install directory.
   Under `npx` the install directory is a cache npm replaces on every update.
 - **Effective state is computed, not stored.** A skill's setting comes from
-  `skillOverrides` plus its own frontmatter — `disable-model-invocation: true`
+  `skillOverrides` plus its own frontmatter, so `disable-model-invocation: true`
   rules out *Auto* and *Name only* no matter what the settings file says. See
   `lib/skills.js`.
+- **Both themes are written out, and neither is the other one reused.** The role
+  colours (`--on`, `--nameonly`, `--slash`, `--danger`, `--accent`) were drawn
+  for a near-black background and fall below 4.5:1 on white, the amber worst of
+  all. `public/styles.css` declares the light values twice on purpose: once
+  under `prefers-color-scheme` for anyone who has never opened Settings, once
+  under `:root[data-theme="light"]` for anyone who has chosen. Collapsing that
+  into one costs either a flash of the wrong theme on load or an override the
+  user cannot undo. Check any new colour against both.
+- **The sidebar holds states, not settings.** Anything that is genuinely a
+  setting belongs in the Settings dialog. Default Claude mode being on, and this
+  being someone's own copy, stay in the sidebar as banners because they are
+  things you must be able to see without going to look, and each banner carries
+  the way out of itself.
 - **The page renders from one `/api/state` payload.** Most actions post a change
   and get fresh state back, then re-render. Follow that pattern rather than
   mutating the DOM from a handler.
@@ -110,9 +167,9 @@ the traps that are not invariants. When asked to **"do the handoff document"**:
 1. **Re-read reality first.** Current `package.json` version, `git log -1`,
    `git status`. Never carry a claim forward without checking it.
 2. **Regenerate every section**, rather than editing around what is there. Only
-   the session log is append-only — add one line, newest first.
+   the session log is append-only, so add one line, newest first.
 3. **Restamp the header** with today's date and the current version. No commit
-   SHA — a stamp cannot name the commit that writes it, so matching on one
+   SHA, because a stamp cannot name the commit that writes it, so matching on one
    would report staleness forever. Date plus version is checkable and honest.
 4. **Write down only what the repository cannot say.** If a fact lives in this
    file, the README, or `git log`, link to it instead of copying it.
@@ -124,7 +181,7 @@ the traps that are not invariants. When asked to **"do the handoff document"**:
    under a minute, leave it out.
 
 This is deliberately *not* a skill, because a global `handoff` skill already
-exists and does something different — it compacts a conversation into a
+exists and does something different, compacting a conversation into a
 throwaway file in the OS temp directory. A project skill of the same name would
 shadow it here.
 
@@ -140,5 +197,5 @@ There is no test suite. What is worth doing by hand after a change:
    setting it had.
 
 **This app edits your real Claude Code configuration.** Testing carelessly has
-consequences — though every write is backed up first, so mistakes are
+consequences, though every write is backed up first, so mistakes are
 recoverable from `~/.claude/backups/`.

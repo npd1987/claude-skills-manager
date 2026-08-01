@@ -12,10 +12,10 @@ const STATES = [
 ];
 
 const GROUPS = [
-  { key: 'auto', title: 'Auto — Claude can load these itself' },
-  { key: 'name-only', title: 'Name only — Claude sees the name, not the details' },
-  { key: 'slash-only', title: 'Slash only — you invoke these with /name' },
-  { key: 'off', title: 'Off — installed but disabled' },
+  { key: 'auto', title: 'Auto: Claude can load these itself' },
+  { key: 'name-only', title: 'Name only: Claude sees the name, not the details' },
+  { key: 'slash-only', title: 'Slash only: you invoke these with /name' },
+  { key: 'off', title: 'Off: installed but disabled' },
 ];
 
 const GROUP_NAMES = { auto: 'Auto', 'name-only': 'Name only', 'slash-only': 'Slash only', off: 'Off' };
@@ -29,7 +29,7 @@ const EXPLAINERS = {
            listed, since they aren't yours to manage here. Each card shows what a skill does and how it's set,
            and the four buttons change that setting. The sections below group skills by how they
            <em>actually behave</em>, which isn't always what the setting alone would suggest.`,
-    note: `Changes save the moment you click, but Claude Code reads these settings when a session starts — so
+    note: `Changes save the moment you click, but Claude Code reads these settings when a session starts, so
            they apply to your <strong>next</strong> session, not one you already have open. Nothing here
            destroys anything: Undo reverses your last action, Off keeps the files in place, and Remove moves a
            skill to a trash folder. Only <strong>Delete forever</strong> erases anything from disk.`,
@@ -37,7 +37,7 @@ const EXPLAINERS = {
   auto: {
     summary: 'What “Auto” means',
     body: `Claude sees what these skills do and can reach for one on its own. You just describe your task in
-           plain words — no <code>/command</code> needed — and Claude decides whether the skill fits. Typing
+           plain words, with no <code>/command</code> needed, and Claude decides whether the skill fits. Typing
            <code>/name</code> still works too.`,
     note: `Every auto skill's description is loaded at the start of each session, so a long description costs
            a little context whether or not the skill gets used. Reserve this for skills you genuinely want
@@ -52,17 +52,17 @@ const EXPLAINERS = {
   },
   'slash-only': {
     summary: 'What “Slash only” means',
-    body: `These never fire on their own. No matter what you ask for, Claude will not load them — you invoke
+    body: `These never fire on their own. No matter what you ask for, Claude will not load them. You invoke
            one by typing <code>/name</code> at the <strong>start</strong> of a message.`,
     note: `Two different things land a skill here. Either you chose this setting, or the skill's own
-           <code>SKILL.md</code> sets <code>disable-model-invocation: true</code> — those carry a
+           <code>SKILL.md</code> sets <code>disable-model-invocation: true</code>. Those carry a
            <strong>locked to /</strong> tag, and their Auto and Name only buttons are struck through because
            the skill's author ruled them out. Changing that means editing the SKILL.md.`,
   },
   off: {
     summary: 'What “Off” means',
     body: `Switched off completely. Claude cannot load these, and <code>/name</code> will not work either.`,
-    note: `The files stay exactly where they are — this only writes a setting, so turning one back on is
+    note: `The files stay exactly where they are. This only writes a setting, so turning one back on is
            instant and loses nothing.`,
   },
   trash: {
@@ -70,18 +70,18 @@ const EXPLAINERS = {
     body: `These folders were moved out of their skills folder and into a <code>skills-trash</code> folder
            beside it. Claude no longer sees them at all.`,
     note: `<strong>Restore</strong> puts one back where it came from, along with the setting it had.
-           <strong>Delete forever</strong> erases it from disk — the one action in this app that undo
-           cannot reverse.`,
+           <strong>Delete forever</strong> erases it from disk, and it is the one action in this app
+           that undo cannot reverse.`,
   },
 };
 
 // Folded into the description panel so one paragraph always says which set of
 // skills you are looking at, whichever page you are on.
 const SCOPE_NOTES = {
-  global: `You're looking at <strong>global</strong> skills — the ones in your personal skills folder, available
+  global: `You're looking at <strong>global</strong> skills, the ones in your personal skills folder, available
            in every project. Skills that ship with Claude Code aren't listed, since they aren't yours to
            manage here.`,
-  projects: `You're looking at <strong>project</strong> skills — ones that live inside a single folder and only
+  projects: `You're looking at <strong>project</strong> skills, ones that live inside a single folder and only
            exist for Claude Code sessions run there. A project skill beats a global skill of the same name
            inside its own folder, and its setting is stored with the project rather than globally.`,
 };
@@ -106,6 +106,29 @@ let query = '';
 let busy = false;
 
 let scope = localStorage.getItem('claude-skills-scope') === 'projects' ? 'projects' : 'global';
+
+/* ----------------------------------------------------------------- theme */
+
+const THEMES = [
+  { value: 'system', label: 'Match my system' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+];
+
+let theme = localStorage.getItem('claude-skills-theme') || 'system';
+if (!THEMES.some((t) => t.value === theme)) theme = 'system';
+
+/**
+ * Sets the attribute the stylesheet keys off, or removes it so the system's own
+ * preference decides. Applied before the first paint rather than after the
+ * state arrives, so nobody sees one theme turn into the other.
+ */
+function applyTheme() {
+  if (theme === 'system') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', theme);
+}
+
+applyTheme();
 
 /** The skills the current scope is showing. */
 const scopeSkills = () => (scope === 'projects' ? data.projectSkills : data.skills);
@@ -301,7 +324,7 @@ async function load() {
   }
 }
 
-const FRESH = 'Reloaded from disk — everything here is up to date.';
+const FRESH = 'Reloaded from disk. Everything here is up to date.';
 
 /* ----------------------------------------------------------------- utils */
 
@@ -376,7 +399,7 @@ function viewPaths() {
 
 /**
  * The count line, with the description folded away behind it. Built by hand
- * rather than with <details> because a details element cannot animate open —
+ * rather than with <details> because a details element cannot animate open,
  * browsers hide its contents outright while closed.
  */
 function sortControl() {
@@ -508,9 +531,10 @@ function render({ rebuild = true } = {}) {
   renderScopes();
   renderHistoryButtons();
   renderFilters();
-  renderMaster();
+  renderBanners();
+  renderSettingsCard();
   renderIssues();
-  renderCopyCard();
+  renderUpdateChip();
   if (rebuild) renderMain();
   else patchCards();
 }
@@ -578,69 +602,147 @@ function renderFilters() {
   }
 }
 
-function renderMaster() {
-  const el = document.getElementById('master');
+/* ------------------------------------------------ default Claude mode */
+
+// The two halves of Default Claude mode, as functions rather than click
+// handlers, because each is now reachable from two places: the banner in the
+// sidebar and the row in Settings.
+
+async function turnAllOff() {
+  const ok = await confirmDialog(
+    'Turn all skills off?',
+    `All <strong>${data.counts.total}</strong> skills will be set to <code>off</code>. Nothing is deleted, and your current
+     per-skill settings are saved so one click brings them back.`,
+    'Turn all off'
+  );
+  if (!ok) return;
+  const before = Object.fromEntries(data.skills.map((s) => [s.name, s.state]));
+  const after = Object.fromEntries(data.skills.map((s) => [s.name, 'off']));
+  run(
+    {
+      kind: 'overrides',
+      label: 'Turn all skills off',
+      before,
+      after,
+      // Saving the pre-change states is what makes both routes back, the
+      // sidebar button and Undo alike, able to restore them.
+      snapshotForward: { action: 'save', payload: { savedAt: new Date().toISOString(), overrides: before } },
+      snapshotBack: { action: 'clear' },
+    },
+    { rebuild: true, message: 'All skills are off. Claude is running default.' }
+  );
+}
+
+function bringSkillsBack() {
   const snap = data.snapshot;
+  if (!snap) return;
+  const before = Object.fromEntries(data.skills.map((s) => [s.name, s.state]));
+  const after = Object.fromEntries(data.skills.map((s) => [s.name, snap.overrides[s.name] || 'on']));
+  run(
+    {
+      kind: 'overrides',
+      label: 'Bring my skills back',
+      before,
+      after,
+      snapshotForward: { action: 'clear' },
+      // Undoing this returns to all-off, so the snapshot has to come back
+      // exactly as it was, timestamp included.
+      snapshotBack: { action: 'save', payload: snap },
+    },
+    { rebuild: true, message: 'Your skill settings are back.' }
+  );
+}
 
-  if (snap) {
-    const when = new Date(snap.savedAt).toLocaleString();
-    el.className = 'master armed';
-    el.innerHTML = `
-      <h4>Default Claude mode is on</h4>
-      <p>Every skill is off. Your previous settings were saved ${esc(when)}.</p>
-      <button class="btn primary" id="master-btn">Bring my skills back</button>`;
+/* ------------------------------------------------------- sidebar banners */
 
-    document.getElementById('master-btn').onclick = () => {
-      const before = Object.fromEntries(data.skills.map((s) => [s.name, s.state]));
-      const after = Object.fromEntries(data.skills.map((s) => [s.name, snap.overrides[s.name] || 'on']));
-      run(
-        {
-          kind: 'overrides',
-          label: 'Bring my skills back',
-          before,
-          after,
-          snapshotForward: { action: 'clear' },
-          // Undoing this returns to all-off, so the snapshot has to come back
-          // exactly as it was, timestamp included.
-          snapshotBack: { action: 'save', payload: snap },
-        },
-        { rebuild: true, message: 'Your skill settings are back.' }
-      );
-    };
-    return;
+/**
+ * One row per thing that is true right now and would be surprising to discover
+ * later. Every banner carries its own way out, so seeing the state and changing
+ * it are the same stop.
+ */
+function renderBanners() {
+  const el = document.getElementById('banners');
+  const update = data.update || {};
+  const parts = [];
+
+  // How the last install went, reported once by the launch that follows it.
+  if (update.last) {
+    parts.push(update.last.ok
+      ? `<div class="banner good">
+           <div class="banner-text"><strong>Updated to ${esc(update.last.to)}</strong>
+           <span>You were on ${esc(update.last.from)} before.</span></div>
+           <button class="btn small" data-banner="seen">Got it</button>
+         </div>`
+      : `<div class="banner bad">
+           <div class="banner-text"><strong>That install did not work</strong>
+           <span>Still on ${esc(update.current)}. Settings has what npm said.</span></div>
+           <button class="btn small" data-banner="settings">Open</button>
+         </div>`);
   }
 
-  el.className = 'master';
-  el.innerHTML = `
-    <h4>Default Claude mode</h4>
-    <p>Turn every global skill off at once to get plain, out-of-the-box Claude. Your current settings are saved
-       so you can undo it.${scope === 'projects' ? ' Project skills are left alone.' : ''}</p>
-    <button class="btn" id="master-btn">Turn all skills off</button>`;
+  // Asked once, and only once. Until it is answered nothing has left this
+  // machine, which is the whole reason to ask before rather than after.
+  if (!update.asked) {
+    parts.push(`
+      <div class="banner ask">
+        <div class="banner-text"><strong>Check npm for new versions?</strong>
+        <span>This is the only thing this app would send anywhere: a request asking npm what the
+        latest version is, and one asking GitHub what changed in it. Neither carries anything about
+        you, your skills or your settings. You can change this later in Settings.</span></div>
+        <div class="banner-buttons">
+          <button class="btn small primary" data-banner="consent-yes">Yes</button>
+          <button class="btn small" data-banner="consent-no">No thanks</button>
+        </div>
+      </div>`);
+  }
 
-  document.getElementById('master-btn').onclick = async () => {
-    const ok = await confirmDialog(
-      'Turn all skills off?',
-      `All <strong>${data.counts.total}</strong> skills will be set to <code>off</code>. Nothing is deleted, and your current
-       per-skill settings are saved so one click brings them back.`,
-      'Turn all off'
-    );
-    if (!ok) return;
-    const before = Object.fromEntries(data.skills.map((s) => [s.name, s.state]));
-    const after = Object.fromEntries(data.skills.map((s) => [s.name, 'off']));
-    run(
-      {
-        kind: 'overrides',
-        label: 'Turn all skills off',
-        before,
-        after,
-        // Saving the pre-change states is what makes both routes back —
-        // the sidebar button and Undo — able to restore them.
-        snapshotForward: { action: 'save', payload: { savedAt: new Date().toISOString(), overrides: before } },
-        snapshotBack: { action: 'clear' },
-      },
-      { rebuild: true, message: 'All skills are off. Claude is running default.' }
-    );
+  if (data.snapshot) {
+    parts.push(`
+      <div class="banner armed">
+        <div class="banner-text"><strong>Default Claude mode is on</strong>
+        <span>Every skill is off. Your settings were saved ${esc(shortDate(data.snapshot.savedAt))}.</span></div>
+        <button class="btn small primary" data-banner="restore">Bring back</button>
+      </div>`);
+  }
+
+  const copy = data.app && data.app.copy;
+  if (copy) {
+    parts.push(`
+      <div class="banner mine">
+        <div class="banner-text"><strong>Your own copy</strong>
+        <span class="mine-name">${esc(copy.name)}</span></div>
+        <button class="btn small" data-banner="manage">Manage</button>
+      </div>`);
+  }
+
+  el.innerHTML = parts.join('');
+
+  const actions = {
+    restore: bringSkillsBack,
+    manage: openManage,
+    settings: openSettings,
+    seen: () => api('/api/updates/seen', {}).then((next) => { data = next; render({ rebuild: false }); }),
+    'consent-yes': () => setAutoCheck(true),
+    'consent-no': () => setAutoCheck(false),
   };
+  for (const btn of el.querySelectorAll('[data-banner]')) {
+    btn.onclick = () => actions[btn.dataset.banner]();
+  }
+}
+
+/**
+ * Answers the first-run question. Saying yes checks straight away, because
+ * having just agreed to it, waiting a day to find out would be an odd reward.
+ */
+async function setAutoCheck(on) {
+  try {
+    data = await api('/api/updates/prefs', { autoCheck: on });
+    if (on) data = await api('/api/updates/check', { force: true });
+    render({ rebuild: false });
+    toast(on ? 'Checking npm for new versions from now on.' : 'Leaving npm alone. Check by hand in Settings any time.');
+  } catch (err) {
+    toast(err.message, true);
+  }
 }
 
 function renderIssues() {
@@ -651,7 +753,7 @@ function renderIssues() {
     parts.push(`
       <div class="issue">
         <strong>${data.orphans.length} setting${data.orphans.length > 1 ? 's' : ''} with no skill</strong>
-        <p>${data.orphans.map((o) => `<code>${esc(o.name)}</code>`).join(', ')} — these entries in settings.json
+        <p>${data.orphans.map((o) => `<code>${esc(o.name)}</code>`).join(', ')}. These entries in settings.json
         point at skills you no longer have, and could silently apply to a built-in skill with the same name.</p>
         <button class="btn" id="clean-orphans">Remove them</button>
       </div>`);
@@ -688,7 +790,10 @@ function renderIdentity() {
   const name = (data.app && data.app.name) || 'Claude Skills';
   document.title = name;
   const heading = document.querySelector('.brand h1');
-  if (heading) heading.textContent = name;
+  // Rewriting the text alone would take the version span with it.
+  if (heading) heading.firstChild.nodeValue = name;
+  const version = document.getElementById('app-version');
+  if (version) version.textContent = `v${(data.app && data.app.version) || ''}`;
 }
 
 /** The one-line preview of what you'll be left with, shown before you commit. */
@@ -704,32 +809,411 @@ function commandRow(text) {
     <button class="link-btn" data-copy="${esc(text)}">Copy</button></div>`;
 }
 
-function renderCopyCard() {
-  const el = document.getElementById('copy-card');
+const GEAR_ICON = `<svg class="gear" viewBox="0 0 20 20" aria-hidden="true">
+  <circle cx="10" cy="10" r="2.6" />
+  <path d="M10 2.6v2M10 15.4v2M17.4 10h-2M4.6 10h-2M15.2 4.8l-1.4 1.4M6.2 13.8l-1.4 1.4M15.2 15.2l-1.4-1.4M6.2 6.2 4.8 4.8" />
+</svg>`;
+
+function renderSettingsCard() {
+  const el = document.getElementById('settings-card');
+  const update = data.update || {};
+
+  el.innerHTML = `
+    <button class="settings-entry" id="open-settings">
+      ${GEAR_ICON}
+      <span class="settings-label">Settings</span>
+      ${update.newer ? '<span class="settings-badge">1</span>' : ''}
+    </button>`;
+  document.getElementById('open-settings').onclick = openSettings;
+}
+
+/**
+ * The one piece of this that follows you around. A new version is worth
+ * knowing about wherever you are in the app, but it is never urgent, so it is a
+ * chip you can ignore rather than something that interrupts.
+ */
+function renderUpdateChip() {
+  const chip = document.getElementById('update-chip');
+  const update = data.update || {};
+  chip.hidden = !update.newer;
+  if (!update.newer) return;
+  // No number here. The version you are on is already beside the app name, and
+  // the number you would be going to belongs where you can act on it.
+  chip.textContent = 'Update available';
+  chip.title = `${update.latest} has been published. You're running ${update.current}.`;
+  chip.onclick = openSettings;
+}
+
+/* ---------------------------------------------------------------- settings */
+
+/**
+ * The command is always on screen, whether or not there is a button beside it.
+ * A button that quietly replaces the thing it automates leaves you stuck when
+ * it fails; one that sits next to it is a shortcut you can ignore.
+ */
+function commandBlock(command, note) {
+  if (!command) return '';
+  return `${commandRow(command)}${note ? `<p class="cmd-note">${esc(note)}</p>` : ''}`;
+}
+
+/**
+ * What changed in the version being offered.
+ *
+ * Collapsed to start with, because release notes are as long as their author
+ * felt like making them and an unpredictable block of text would push the
+ * controls below it off the bottom of the dialog. Same open-and-close as the
+ * description panel on the count line, so it behaves the way the one other
+ * expanding thing in this app behaves.
+ *
+ * The body is somebody else's writing arriving over the network. It is escaped
+ * and laid out as plain text; the only thing done to it is dropping the leading
+ * hashes off Markdown headings, which is a text change and not an
+ * interpretation of one.
+ */
+function notesBlock() {
+  const update = data.update || {};
+  if (!update.newer) return '';
+
+  const notes = update.notes;
+  if (!notes) {
+    return update.releasesUrl
+      ? `<p class="muted small">No release notes were published for ${esc(update.latest)}.
+         <a href="${esc(update.releasesUrl)}" target="_blank" rel="noopener noreferrer">Releases on GitHub</a></p>`
+      : '';
+  }
+
+  const text = String(notes.body || '')
+    .split('\n')
+    .map((line) => line.replace(/^#{1,6}\s+/, ''))
+    .join('\n')
+    .trim();
+
+  if (!text) return '';
+
+  return `
+    <div class="explainer notes" id="notes">
+      <button class="explainer-toggle" id="notes-toggle" aria-expanded="false">What's new</button>
+      <div class="explainer-panel">
+        <div class="explainer-inner">
+          <div class="notes-card">
+            ${notes.title ? `<strong>${esc(notes.title)}</strong>` : ''}
+            <div class="notes-body">${esc(text)}</div>
+            <a href="${esc(notes.url)}" target="_blank" rel="noopener noreferrer">Read it on GitHub</a>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function updatesSection() {
+  const update = data.update || {};
+  const apply = update.apply || {};
+  const last = update.last;
+
+  const status = update.newer
+    ? `<span class="pill new">${esc(update.latest)} available</span>`
+    : update.latest
+      ? '<span class="pill">Up to date</span>'
+      : '';
+
+  const checked = update.checkedAt
+    ? `Last checked ${esc(new Date(update.checkedAt).toLocaleString())}.`
+    : 'Never checked.';
+
+  const isCopy = Boolean(data.app && data.app.copy);
+
+  // Everything that explains rather than instructs. Kept together and, when
+  // there is enough of it to become a wall, folded away behind a toggle. The
+  // one-line answer and the command stay on screen; the reasoning is there for
+  // anyone who wants it and out of the way of anyone who does not.
+  //
+  // The "why there is no button" line only earns a place when a button would
+  // have fitted here and something got in the way. Where one never made sense,
+  // the note has already said how updating works, and apologising for the
+  // absence would only say it a second time.
+  const explanations = [
+    // In a copy the headline above already says this, and the fold below is two
+    // labelled choices rather than prose, so repeating the note here would say
+    // the same thing twice in three paragraphs.
+    isCopy ? null : update.note,
+    update.blocked,
+    update.newer && apply.applicable && !apply.ok ? apply.reason : null,
+  ].filter(Boolean);
+
+  // Something a copy can do but is not being told to do. It lives inside the
+  // fold, under its own heading, described as the merge it is rather than as an
+  // update, because recommending it would be recommending that somebody merge
+  // other people's code into work they have been changing.
+  // The two headings are deliberately the same shape, each naming the version
+  // it acts on. With two installs on the machine, "which one does this change?"
+  // is the only question that matters here, and it should be answerable from
+  // the heading alone.
+  const optional = update.optional
+    ? `<div class="optional">
+         <strong>Merge the update into your modified copy</strong>
+         <p>${esc(update.optional.note)}</p>
+         ${commandBlock(update.optional.command, update.optional.commandNote)}
+       </div>`
+    : '';
+
+  // Once somebody has made a copy there are two installs, and the question
+  // "which one am I updating?" has two answers. Both are laid out, side by
+  // side, so neither has to be guessed at.
+  const origin = update.origin
+    ? `<div class="optional">
+         <strong>Update the original version of the app</strong>
+         <p>${esc(update.origin.note)}</p>
+         <p class="muted small">${esc(update.origin.name)}, in <code>${esc(update.origin.dir)}</code>.</p>
+         ${update.origin.command && update.origin.exists
+           ? commandBlock(update.origin.command, update.origin.commandNote)
+           : ''}
+       </div>`
+    : '';
+
+  // What is behind the fold decides what the fold is called. Once a copy exists
+  // these really are two apps, in two folders, launched separately, so "which
+  // app" is the plain word for the choice. Calling it "how updating works"
+  // would read as an explanation nobody needs to open, and with only prose
+  // inside, promising a choice would be a lie.
+  const actionable = Boolean(optional) || Boolean(origin);
+  const foldLabel = actionable ? 'Choose which app to update' : 'How updating works here';
+  const wall = actionable || explanations.join(' ').length > 160;
+
+  const detail = explanations.length || actionable
+    ? wall
+      ? `<div class="explainer notes" id="how">
+           <button class="explainer-toggle" id="how-toggle" aria-expanded="false">${foldLabel}</button>
+           <div class="explainer-panel"><div class="explainer-inner">
+             <div class="notes-card">
+               ${explanations.map((line) => `<p>${esc(line)}</p>`).join('')}
+               ${optional}
+               ${origin}
+             </div>
+           </div></div>
+         </div>`
+      : explanations.map((line) => `<p class="muted">${esc(line)}</p>`).join('')
+    : '';
+
+  const failure = last && !last.ok
+    ? `<div class="apply-failed">
+         <strong>The last install did not work.</strong>
+         <p>You are still on ${esc(update.current)}. This is what npm said:</p>
+         <pre>${esc(last.output || 'npm said nothing.')}</pre>
+       </div>`
+    : '';
+
+  return `
+    <section class="settings-section">
+      <h5>Updates ${status}</h5>
+      <p>You're running <strong>${esc(update.current)}</strong>. ${esc(checked)}</p>
+      ${isCopy
+        ? `<p class="why">This is your own copy, and it does not update. Nothing published to the original
+           project changes it, and updating the app you made it from cannot change it either.</p>`
+        : ''}
+      ${notesBlock()}
+      ${detail}
+      ${failure}
+      ${update.newer && apply.ok
+        ? `<button class="btn primary" data-apply="${esc(update.latest)}">Update to ${esc(update.latest)}</button>`
+        : ''}
+      ${commandBlock(update.command, update.commandNote)}
+      <div class="settings-row">
+        <label class="toggle">
+          <input type="checkbox" id="auto-check" ${update.autoCheck ? 'checked' : ''} />
+          <span>Check for updates automatically</span>
+        </label>
+        <button class="btn small" id="check-now">Check now</button>
+      </div>
+      <p class="muted small">Once a day at most: npm for the latest version number, and GitHub for that
+      release's notes when there is a newer one to describe. Neither carries anything about you, your skills or
+      your settings, and Check now works whether this is on or off.</p>
+      ${update.lastError ? `<p class="why">Last check did not get through: ${esc(update.lastError)}</p>` : ''}
+    </section>`;
+}
+
+/**
+ * Going back to a version you were on before. On npm this is an ordinary
+ * install of an older number, because published versions stay published, so the
+ * way back is the way forward with a different argument.
+ */
+function rollbackSection() {
+  const update = data.update || {};
+  const apply = update.apply || {};
+  const earlier = update.earlier || [];
+  if (!earlier.length) return '';
+
+  const rows = earlier.map((entry) => `
+    <div class="version-row">
+      <div>
+        <code>${esc(entry.version)}</code>
+        <span class="muted small">${entry.at ? `used until ${esc(shortDate(entry.at))}` : ''}</span>
+      </div>
+      ${entry.command && apply.ok && entry.older
+        ? `<button class="btn small" data-apply="${esc(entry.version)}">Go back to it</button>`
+        : entry.command
+          ? `<button class="link-btn" data-copy="${esc(entry.command)}">Copy command</button>`
+          : ''}
+    </div>`).join('');
+
+  return `
+    <section class="settings-section">
+      <h5>Versions you have run</h5>
+      <p>If a new version turns out worse than the one before it, put the old one back. Nothing you have set
+      is touched by this: your skill settings live in your own Claude folder, not in the app.</p>
+      ${rows}
+    </section>`;
+}
+
+function paintSettings() {
   const copy = data.app && data.app.copy;
 
-  if (!copy) {
-    el.className = 'master';
-    el.innerHTML = `
-      <h4>Modify this app</h4>
-      <p>Get your own copy to change in Claude Code.</p>
-      <button class="btn" id="copy-btn">Set it up</button>`;
-    document.getElementById('copy-btn').onclick = openSetup;
+  paintSetup('Settings', `
+    <section class="settings-section">
+      <h5>Appearance</h5>
+      <p>Light and dark are both written out properly, so nothing goes faint in either one.</p>
+      <div class="choices theme-choices" role="radiogroup">
+        ${THEMES.map((option) => `
+          <button class="choice compact" role="radio" data-set-theme="${option.value}"
+                  aria-checked="${theme === option.value}">
+            <span class="radio"></span><span><h6>${esc(option.label)}</h6></span>
+          </button>`).join('')}
+      </div>
+    </section>
+
+    ${updatesSection()}
+    ${rollbackSection()}
+
+    <section class="settings-section">
+      <h5>Default Claude mode</h5>
+      ${data.snapshot
+        ? `<p>Every skill is off, and your previous settings were saved
+             ${esc(new Date(data.snapshot.savedAt).toLocaleString())}.</p>
+           <button class="btn primary" id="settings-restore">Bring my skills back</button>`
+        : `<p>Turn every global skill off at once to get plain, out-of-the-box Claude. Your current settings
+             are saved so you can undo it.${scope === 'projects' ? ' Project skills are left alone.' : ''}</p>
+           <button class="btn" id="settings-alloff">Turn all skills off</button>`}
+    </section>
+
+    <section class="settings-section">
+      <h5>${copy ? 'Your own copy' : 'Modify this app'}</h5>
+      ${copy
+        ? `<p>You're running your own version, called <span class="mine-name">${esc(copy.name)}</span>.</p>
+           <button class="btn" id="settings-copy">Manage</button>`
+        : `<p>Get your own copy to change in Claude Code. Once you have one it is yours: it lives in its own
+             folder, keeps its own version, and updating this app never touches it.</p>
+           <button class="btn" id="settings-copy">Set it up</button>`}
+    </section>
+
+    <div class="modal-actions">
+      <button class="btn ghost" data-close-setup>Close</button>
+    </div>`, wireSettings);
+}
+
+function openSettings() {
+  paintSettings();
+}
+
+function wireSettings(modal) {
+  for (const btn of modal.querySelectorAll('[data-set-theme]')) {
+    btn.onclick = () => {
+      theme = btn.dataset.setTheme;
+      localStorage.setItem('claude-skills-theme', theme);
+      applyTheme();
+      // Repainted rather than patched, so the chosen option is marked without
+      // a second source of truth for which one that is.
+      paintSettings();
+    };
+  }
+
+  // Both collapsibles behave the same way, so they are wired the same way.
+  for (const [toggleId, panelId] of [['notes-toggle', 'notes'], ['how-toggle', 'how']]) {
+    const toggle = modal.querySelector(`#${toggleId}`);
+    if (!toggle) continue;
+    toggle.onclick = () => {
+      const open = modal.querySelector(`#${panelId}`).classList.toggle('open');
+      toggle.setAttribute('aria-expanded', String(open));
+    };
+  }
+
+  const restore = modal.querySelector('#settings-restore');
+  if (restore) restore.onclick = () => { closeSetup(); bringSkillsBack(); };
+
+  const allOff = modal.querySelector('#settings-alloff');
+  if (allOff) allOff.onclick = () => { closeSetup(); turnAllOff(); };
+
+  const copyBtn = modal.querySelector('#settings-copy');
+  if (copyBtn) copyBtn.onclick = () => (data.app && data.app.copy ? openManage() : openSetup());
+
+  const auto = modal.querySelector('#auto-check');
+  if (auto) {
+    auto.onchange = async () => {
+      await setAutoCheck(auto.checked);
+      paintSettings();
+    };
+  }
+
+  const check = modal.querySelector('#check-now');
+  if (check) {
+    check.onclick = async () => {
+      check.disabled = true;
+      check.textContent = 'Checking…';
+      try {
+        data = await api('/api/updates/check', { force: true });
+        render({ rebuild: false });
+        paintSettings();
+        const update = data.update;
+        toast(update.newer
+          ? `${update.latest} is out. You're on ${update.current}.`
+          : update.lastError
+            ? `Could not reach npm: ${update.lastError}`
+            : `You're on the latest version (${update.current}).`);
+      } catch (err) {
+        toast(err.message, true);
+        check.disabled = false;
+        check.textContent = 'Check now';
+      }
+    };
+  }
+
+  for (const btn of modal.querySelectorAll('[data-apply]')) {
+    btn.onclick = () => installVersion(btn.dataset.apply);
+  }
+}
+
+/**
+ * Installs a version and closes down, because npm is about to replace the
+ * folder this app is running out of. Waiting for it here is not an option:
+ * on Windows the install would fail outright with the files still in use.
+ */
+async function installVersion(version) {
+  const current = data.update.current;
+  const back = data.update.earlier.some((entry) => entry.version === version && entry.older);
+
+  const ok = await confirmDialog(
+    back ? `Go back to ${version}?` : `Update to ${version}?`,
+    `Claude Skills will close, and npm will install <strong>${esc(version)}</strong> in its place. Open the app
+     again in a moment and it will tell you how it went.<br /><br />
+     Your skills and settings are not touched by this. They live in your own Claude folder, not in the app.`,
+    back ? `Close and install ${version}` : `Close and update`
+  );
+  if (!ok) return;
+
+  closeSetup();
+  quitting = true;
+  try {
+    await api('/api/updates/apply', { version });
+  } catch (err) {
+    quitting = false;
+    toast(err.message, true);
     return;
   }
 
-  const detail = copy.mode === 'replace'
-    ? `, and it took over the <span class="mine-name">${esc(copy.name)}</span> shortcut`
-    : copy.mode === 'none'
-      ? ', which has no shortcut of its own'
-      : `, called <span class="mine-name">${esc(copy.name)}</span>`;
-
-  el.className = 'master mine';
-  el.innerHTML = `
-    <h4>Your own copy</h4>
-    <p>You're running your version${detail}.</p>
-    <button class="btn" id="copy-btn">Manage</button>`;
-  document.getElementById('copy-btn').onclick = openManage;
+  document.body.innerHTML =
+    '<div style="display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;' +
+    'height:100%;color:var(--text-dim);font-size:14px;text-align:center;padding:0 24px">' +
+    `<strong style="color:var(--text);font-size:15px">Installing ${esc(version)}</strong>` +
+    '<span>This window is finished with. Open Claude Skills again in a moment, and it will say how it went.</span>' +
+    '</div>';
 }
 
 /* ------------------------------------------------------------ the dialogs */
@@ -755,7 +1239,7 @@ function paintSetup(title, body, wire) {
         await navigator.clipboard.writeText(btn.dataset.copy);
         toast('Copied.');
       } catch {
-        toast('Could not reach the clipboard — select and copy it by hand.', true);
+        toast('Could not reach the clipboard. Select and copy it by hand.', true);
       }
     };
   }
@@ -791,14 +1275,14 @@ function paintSetupStep1() {
     </button>`;
 
   paintSetup('Modify this app', `
-    <p>You'll get your own copy — around 2,000 lines of plain JavaScript with no dependencies —
+    <p>You'll get your own copy, around 2,000 lines of plain JavaScript with no dependencies,
     and a <code>CLAUDE.md</code> that explains how it works, so Claude Code can start changing it
     straight away.</p>
 
     <div class="relation">
       <h5>Your skills are never touched</h5>
       <p>They live in <code>~/.claude</code>, not inside the app, so every copy manages the same
-      ones. Both copies can run at the same time — they take separate ports.</p>
+      ones. Both copies can run at the same time, because they take separate ports.</p>
     </div>
 
     <div class="setup-step">
@@ -1015,7 +1499,7 @@ function openManage() {
       return shortcutRow(original, 'the original again') +
         (keepShortcut
           ? shortcutRow(name, 'your copy')
-          : shortcutRow(copy.name, 'no shortcut — the folder stays where it is', true));
+          : shortcutRow(copy.name, 'no shortcut, and the folder stays where it is', true));
     }
     if (action === 'takeover') {
       return shortcutRow(original, 'opens your copy from now on') +
@@ -1035,12 +1519,12 @@ function openManage() {
       </button>`;
 
     // The name field belongs immediately under whichever option it applies to,
-    // not below the group — otherwise it reads as though it governs all of them.
+    // not below the group, because otherwise it reads as though it governs all of them.
     const nameField = `
       <div class="name-field attached">
         <label for="manage-name">Name for your copy</label>
         <input id="manage-name" value="${esc(name)}" spellcheck="false" />
-        ${clash ? `<p class="name-clash">That's the original's name — pick a different one.</p>` : ''}
+        ${clash ? `<p class="name-clash">That's the original's name. Pick a different one.</p>` : ''}
       </div>`;
 
     // One action with a modifier when this copy took the original's name: the
@@ -1115,7 +1599,7 @@ function openManage() {
           if (bad && !warn) {
             warn = document.createElement('p');
             warn.className = 'name-clash';
-            warn.textContent = "That's the original's name — pick a different one.";
+            warn.textContent = "That's the original's name. Pick a different one.";
             input.after(warn);
           } else if (!bad && warn) {
             warn.remove();
@@ -1338,7 +1822,7 @@ function cardInner(skill) {
     tags.push(`<span class="tag locked" title="This skill's own SKILL.md sets disable-model-invocation: true, so Claude never auto-loads it regardless of the setting here.">locked to /</span>`);
   }
   if (skill.declaredNoSlash) {
-    tags.push(`<span class="tag locked" title="SKILL.md sets user-invocable: false — it does not appear in the / menu.">no /command</span>`);
+    tags.push(`<span class="tag locked" title="SKILL.md sets user-invocable: false, so it does not appear in the / menu.">no /command</span>`);
   }
   if (skill.nameMismatch) {
     tags.push(`<span class="tag warn" title="Frontmatter says name: ${esc(skill.declaredName)} but the folder is ${esc(skill.name)}. Settings match the folder name.">name mismatch</span>`);
@@ -1450,7 +1934,7 @@ function wireCards() {
         : '~/.claude/skills-trash';
       const ok = await confirmDialog(
         `Remove /${skill.name}?`,
-        `The folder moves to <code>${esc(trashPath)}</code>. Nothing is erased — undo brings it straight back, or
+        `The folder moves to <code>${esc(trashPath)}</code>. Nothing is erased. Undo brings it straight back, or
          restore it from <strong>Removed</strong> in the sidebar. If you only want Claude to stop using it,
          choose <code>Off</code> instead.`,
         'Move to Removed'
@@ -1485,7 +1969,7 @@ document.getElementById('refresh').onclick = () => load().then((ok) => ok && toa
 document.getElementById('quit').onclick = async () => {
   const ok = await confirmDialog(
     'Quit Claude Skills?',
-    'The app stops running. Your settings are already saved — nothing is lost. Launch it again any time.',
+    'The app stops running. Your settings are already saved, so nothing is lost. Launch it again any time.',
     'Quit'
   );
   if (!ok) return;
@@ -1551,4 +2035,14 @@ load().then((ok) => {
   if (!ok) return;
   const nav = performance.getEntriesByType('navigation')[0];
   toast(nav && nav.type === 'reload' ? FRESH : 'Your latest settings are loaded from disk.');
+
+  // The page asks, rather than the server checking on its own, so the app never
+  // reaches the network with nobody looking at it. The route does nothing
+  // unless the user opted in and a day has gone by, which is what makes it safe
+  // to call on every load.
+  if (data.update && data.update.autoCheck) {
+    api('/api/updates/check', { force: false })
+      .then((next) => { data = next; render({ rebuild: false }); })
+      .catch(() => {});
+  }
 });

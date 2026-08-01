@@ -11,7 +11,11 @@
       <div class="brand">
         <span class="brand-mark"></span>
         <div>
-          <h1>Claude Skills</h1>
+          <!-- The version sits with the name and stays there. Which one you are
+               running is the first thing you need when deciding whether to take
+               a new one, so it is never the thing that gets replaced by the
+               notice that a new one exists. -->
+          <h1>Claude Skills<span class="version" id="app-version"></span></h1>
           <p class="brand-sub" id="skills-path"></p>
         </div>
       </div>
@@ -28,6 +32,9 @@
           <button class="btn" id="undo" disabled>&#8630; Undo</button>
           <button class="btn" id="redo" disabled>Redo &#8631;</button>
         </div>
+        <!-- Only ever on screen when a newer version exists. Somewhere always
+             visible beats a message that has to be gone looking for. -->
+        <button class="btn chip" id="update-chip" hidden></button>
         <button class="btn" id="refresh" title="Re-read everything from disk, and regroup the list">Refresh</button>
         <button class="btn" id="quit" title="Stop Claude Skills and close it down">Quit</button>
       </div>
@@ -39,14 +46,18 @@
 
         <nav class="filters" id="filters"></nav>
 
-        <section class="master" id="master"></section>
+        <!-- States, not settings. Default Claude mode being on, and this being
+             somebody's own copy, are both things you need to see without going
+             looking for them, so they stay here while they are true. Each one
+             carries the way out of itself: showing a state without offering to
+             change it just sends people hunting. -->
+        <section id="banners"></section>
 
-        <!-- "Modify this app", or "Your own copy" when this is already one.
-             Sits with the other whole-app controls, above anything that needs
-             attention — problems belong at the bottom, nearest the eye's last
-             stop. -->
-        <section id="copy-card"></section>
+        <!-- Everything that is genuinely a setting is one entry, because five
+             stacked cards in a 244px column is a list nobody reads. -->
+        <section id="settings-card"></section>
 
+        <!-- Problems belong at the bottom, nearest the eye's last stop. -->
         <section class="issues" id="issues"></section>
       </aside>
 

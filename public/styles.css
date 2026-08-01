@@ -21,8 +21,20 @@
   --sans: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
 }
 
+/* Light.
+ *
+ * The role colours are not the dark ones reused. Every one of them was written
+ * to sit on a near-black background, and on white they fall between 2.1 and
+ * 4.0 against it, with the amber effectively unreadable. These are the same
+ * hues taken far enough down to clear 4.5 on both the page and the card, which
+ * is the point at which small text is legible rather than merely visible.
+ *
+ * Declared twice on purpose. The media query is what someone who has never
+ * opened Settings gets, and the attribute is what someone who has chosen gets,
+ * and neither can be expressed in terms of the other without either a flash of
+ * the wrong theme on load or an override that cannot be undone. */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme="dark"]) {
     --bg: #faf9f7;
     --bg-raised: #ffffff;
     --bg-hover: #f2f1ee;
@@ -31,9 +43,32 @@
     --text: #1f2024;
     --text-dim: #5f6472;
     --text-faint: #8b90a0;
-    --accent-soft: rgba(201, 100, 66, 0.1);
-    --off: #969bab;
+    --accent: #a8472a;
+    --accent-soft: rgba(168, 71, 42, 0.1);
+    --on: #2f7d55;
+    --nameonly: #2f68c2;
+    --slash: #8a6410;
+    --danger: #b1362f;
+    --off: #7d8290;
   }
+}
+
+:root[data-theme="light"] {
+  --bg: #faf9f7;
+  --bg-raised: #ffffff;
+  --bg-hover: #f2f1ee;
+  --line: #e2e0db;
+  --line-soft: #ebe9e5;
+  --text: #1f2024;
+  --text-dim: #5f6472;
+  --text-faint: #8b90a0;
+  --accent: #a8472a;
+  --accent-soft: rgba(168, 71, 42, 0.1);
+  --on: #2f7d55;
+  --nameonly: #2f68c2;
+  --slash: #8a6410;
+  --danger: #b1362f;
+  --off: #7d8290;
 }
 
 * { box-sizing: border-box; }
@@ -84,6 +119,15 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 }
 
 .brand h1 { font-size: 15px; }
+
+.version {
+  margin-left: 7px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-faint);
+  letter-spacing: 0;
+}
 
 .brand-sub {
   margin: 1px 0 0;
@@ -174,7 +218,7 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 .main-head { margin-bottom: 16px; }
 .main-head h2 { font-size: 19px; }
 
-/* Global / Projects sits above the filters because it governs them — switching
+/* Global / Projects sits above the filters because it governs them: switching
    it re-computes every count in the list below. */
 .scopes {
   display: flex;
@@ -325,20 +369,91 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
   font-weight: 600;
 }
 
-/* ---------------------------------------------------------------- master */
+/* --------------------------------------------------------------- banners */
 
-.master {
+/* One row each: what is true, and the way out of it. The button sits on the
+   same line as the text so that showing a state costs no more height than
+   saying it, which is what keeps these worth leaving on screen. */
+
+#banners:empty { display: none; }
+#banners { display: flex; flex-direction: column; gap: 8px; }
+
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 12px;
+  padding: 9px 10px;
   background: var(--bg);
 }
 
-.master h4 { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
-.master p { margin: 0 0 10px; font-size: 12px; color: var(--text-dim); }
-.master .btn { width: 100%; }
+.banner-text { min-width: 0; flex: 1; }
+.banner-text strong { display: block; font-size: 12px; font-weight: 600; }
+.banner-text span {
+  display: block;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
 
-.master.armed { border-color: var(--slash); }
+.banner .btn.small { flex: none; }
+
+.banner.armed { border-color: var(--slash); }
+.banner.mine { border-color: var(--nameonly); }
+.banner.good { border-color: var(--on); }
+.banner.bad { border-color: var(--danger); }
+
+/* The consent question is the one banner with a paragraph in it rather than a
+   line, so it stacks instead of sitting on one row. Nobody should be answering
+   this from a summary. */
+.banner.ask { flex-direction: column; align-items: stretch; border-color: var(--accent); }
+.banner.ask .banner-text span { margin-top: 3px; }
+.banner-buttons { display: flex; gap: 6px; margin-top: 9px; }
+.banner-buttons .btn { flex: 1; }
+
+.mine-name { font-family: var(--mono); font-size: 11.5px; color: var(--nameonly); }
+
+/* -------------------------------------------------------- settings entry */
+
+.settings-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 9px 10px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.settings-entry:hover { background: var(--bg-hover); }
+.settings-label { flex: 1; text-align: left; }
+
+.settings-entry .gear {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: var(--text-dim);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.settings-badge {
+  min-width: 17px;
+  padding: 1px 5px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-align: center;
+}
 
 /* ---------------------------------------------------------------- issues */
 
@@ -757,22 +872,174 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
   padding: 20px;
 }
 
+/* A browser's default link blue lands at about 2:1 on this app's near-black
+   card, which is not readable. The accent clears 4.5:1 on every surface in both
+   themes, and the underline is what still says "link" once the colour is no
+   longer doing that job on its own. */
+.modal-panel a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.modal-panel a:hover { filter: brightness(1.15); }
+
 .modal-panel h3 { font-size: 15px; margin-bottom: 8px; }
 .modal-panel p { margin: 0 0 18px; font-size: 13px; color: var(--text-dim); }
 .modal-panel code { font-family: var(--mono); color: var(--text); }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
-/* ------------------------------------------------- modify this app / copy */
+/* ---------------------------------------------------------------- settings */
 
-/* The sidebar card, once you're running your own copy rather than an original. */
-.master.mine { border-color: var(--nameonly); }
-.master .mine-name { font-family: var(--mono); font-size: 11.5px; color: var(--nameonly); }
+/* Each setting is its own card rather than a rule between paragraphs. A
+   hairline was not enough: at this text size the sections ran together and the
+   dialog read as one long block of prose. Sitting on --bg inside a panel that
+   is --bg-raised gives each one an edge that is obvious in both themes without
+   any of them shouting. */
+.settings-section {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--bg);
+  padding: 13px 14px 4px;
+  margin-bottom: 10px;
+}
+
+.settings-section h5 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.settings-section p { margin: 0 0 11px; font-size: 12.5px; color: var(--text-dim); line-height: 1.5; }
+.settings-section p.small { font-size: 11.5px; }
+.settings-section .btn { margin-bottom: 11px; }
+
+/* Blocks that sit on --bg elsewhere would now vanish into the section card, so
+   inside one they take the raised surface instead. Scoped rather than changed
+   at source, because the same blocks appear in the setup dialogs where the
+   surface underneath them is the other way round. */
+.settings-section .cmd,
+.settings-section .apply-failed pre { background: var(--bg-raised); }
+
+.pill {
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+.pill.new { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+
+/* Why there is no button, and what stands in the way. Stated plainly rather
+   than left for someone to discover by clicking. */
+/* Context, not alarm. These paragraphs explain why a button is missing or what
+   the state of the folder is, and colouring them amber made a plain fact read
+   as a problem. */
+.why { font-size: 12px; color: var(--text-faint); border-left: 2px solid var(--line); padding-left: 9px; }
+.cmd-note { margin: 6px 0 11px !important; font-size: 11.5px; }
+
+.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 9px; }
+.settings-row .btn { margin-bottom: 0; }
+
+.toggle { display: flex; align-items: center; gap: 8px; font-size: 12.5px; cursor: pointer; }
+.toggle input { margin: 0; accent-color: var(--accent); }
+
+.version-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.version-row code { font-family: var(--mono); font-size: 12px; }
+.version-row .btn { margin-bottom: 0; }
+.version-row .muted { margin-left: 7px; }
+
+/* Release notes, closed until asked for. Their length is the release author's
+   choice, so left open by default they would push the buttons below them off
+   the bottom of the dialog. */
+.notes { margin-bottom: 11px; }
+.notes .explainer-toggle { padding-left: 0; }
+
+/* Inside a section card now, so it takes the raised surface to stay distinct
+   from the card it sits in. */
+.notes-card {
+  margin-top: 7px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 11px 13px;
+  background: var(--bg-raised);
+}
+
+.notes-card strong { display: block; margin-bottom: 5px; font-size: 12.5px; }
+.notes-card a { font-size: 12px; }
+
+.notes-body {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  line-height: 1.55;
+  /* Somebody else's text, laid out exactly as they wrote it and interpreted
+     no further than that. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 260px;
+  overflow-y: auto;
+  margin-bottom: 9px;
+}
+
+/* Available, not advised. Separated from the explanation above it so it does
+   not read as the next step. */
+.optional { border-top: 1px solid var(--line); margin-top: 11px; padding-top: 11px; }
+.optional strong { display: block; margin-bottom: 4px; font-size: 12.5px; }
+.optional p { margin: 0 0 9px !important; font-size: 12px; }
+
+/* npm's own words, kept verbatim. A summary of a failure is no use to the
+   person who has to fix it. */
+.apply-failed {
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  padding: 11px;
+  margin-bottom: 13px;
+}
+
+.apply-failed strong { font-size: 12.5px; }
+.apply-failed p { margin: 4px 0 8px !important; }
+
+.apply-failed pre {
+  margin: 0;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+/* A new version is worth saying wherever you are, and never worth interrupting
+   for, so it rides in the top bar and waits. */
+.btn.chip { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.btn.chip:hover { background: var(--accent-soft); filter: brightness(1.2); }
+.btn.small { padding: 4px 9px; font-size: 12px; }
+
+/* ------------------------------------------------- modify this app / copy */
 
 /* Setup carries more than a confirmation does. */
 .modal-panel.wide { width: min(560px, 92vw); max-height: 88vh; overflow-y: auto; }
 .modal-panel.wide > p { margin: 0 0 16px; }
 
-/* "What happens to the app I already have?" — the first thing anyone wonders,
+/* "What happens to the app I already have?" is the first thing anyone wonders,
    so it gets its own weight rather than being buried in a paragraph. */
 .relation {
   border: 1px solid var(--line);
@@ -827,6 +1094,13 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
   color: var(--text);
   width: 100%;
 }
+
+/* Three one-word options do not need a paragraph of space each, so they sit in
+   a row rather than a stack. */
+.theme-choices { grid-template-columns: repeat(3, 1fr); }
+.choice.compact { padding: 8px 10px; align-items: center; gap: 8px; }
+.choice.compact h6 { margin: 0; font-size: 12.5px; font-weight: 500; }
+.choice.compact .radio { margin-top: 0; }
 
 .choice:hover { border-color: var(--text-faint); }
 .choice[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); }
@@ -939,7 +1213,7 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
   background: linear-gradient(140deg, var(--accent), #a04d31);
 }
 
-/* A command to run, with a copy button — the one part a page can't do. */
+/* A command to run, with a copy button, which is the one part a page can't do. */
 .cmd {
   display: flex;
   align-items: center;

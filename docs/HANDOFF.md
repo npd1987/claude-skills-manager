@@ -4,7 +4,7 @@
 
 > **Check this stamp first.** If `package.json` no longer reads 1.0.1, or
 > `git log --oneline --since=2026-08-01` shows commits that touched anything
-> outside `docs/`, then this document describes an older state — trust the
+> outside `docs/`, then this document describes an older state, so trust the
 > repository over anything below, and regenerate it (see *Keeping this file
 > honest*).
 >
@@ -31,6 +31,13 @@ It began as a Windows-only personal tool and was made cross-platform, packaged,
 and given a supported way for other people to fork and modify it from inside the
 app itself.
 
+**The version on npm is behind the repository.** npm's latest is 1.0.1, and
+1.0.1 is also what `package.json` says, but the working tree now carries the
+whole Settings and updates feature described below. Nothing has been bumped or
+published. **A version bump is the next decision**, and it should happen before
+publishing, not after: the app reports its own `package.json` version, so an
+unbumped publish would leave every installed copy unable to tell the two apart.
+
 ---
 
 ## Verified, and not
@@ -43,7 +50,7 @@ version it was checked at.
 | Server, API, token guard | ✅ Windows | Headless start, `/api/state`, page load, bad-token 403 | 1.0.1 |
 | Install from npm registry | ✅ Windows | Fresh install into a scratch dir, then run | 1.0.1 |
 | Install via `npx github:` | ✅ Windows | Clean run from the public repo | 1.0.0 |
-| Packed tarball contents | ✅ | 26 files, no local settings, no `data/` | 1.0.1 |
+| Packed tarball contents | ⚠️ **Stale** | Was 26 files at 1.0.1; two lib files have been added since | 1.0.1 |
 | Line endings in the tarball | ✅ | LF on everything POSIX executes; CRLF on the Windows launchers | 1.0.0 |
 | Shortcut install/remove | ✅ Windows | Created under a custom name, target inspected, removed | 1.0.0 |
 | Shortcut install/remove | ⚠️ **Untested** on macOS and Linux | Generated `.plist` / `.desktop` contents checked only | 1.0.0 |
@@ -53,10 +60,26 @@ version it was checked at.
 | Two copies side by side | ✅ Windows | Distinct ports, distinct names, three consecutive runs | 1.0.0 |
 | Data migration from legacy `data/` | ✅ | Sandboxed home; copies when empty, refuses to overwrite newer | 1.0.0 |
 | Icon containers (ICO/PNG/ICNS) | ✅ | Parsed by an independent reader, decoded visually | 1.0.0 |
+| Update check against live npm | ✅ Windows | Real request to the registry; compared, reported "up to date" correctly | unreleased |
+| Consent gate | ✅ Windows | First run asks; no request made until answered | unreleased |
+| Install-kind detection and button gate | ✅ | Every kind exercised against `installKind`; only `global` yields a button | unreleased |
+| Release-notes rendering, including injection | ✅ Windows | Seeded a body containing `<img onerror>`; rendered as literal text, zero elements created | unreleased |
+| GitHub release-fetch response shape | ✅ | Checked against a repo that publishes releases; **this repo has none**, so the live path here returns "no notes" | unreleased |
+| **Installing a version (forward or back)** | ❌ **Never run** | Only the pre-flight gate is exercised. No npm install has ever been performed by the detached child | unreleased |
+| Light and dark contrast | ✅ | Role colours computed against both light surfaces; all clear 4.5:1. Both themes viewed | unreleased |
+| Sidebar banners | ⚠️ Partial | Rendered from simulated state, not by really arming Default Claude mode | unreleased |
+| A copy's Settings, both options | ✅ Windows | Ran with a real marker pointing at a real folder; both commands rendered, and the missing-original case correctly withheld one | unreleased |
 
 **macOS has never run this.** If something breaks there it will be in the `.app`
 bundle, the `osascript` folder picker, or the `open -R` reveal. Linux is
 closable whenever someone sets up WSL or a container; macOS needs real hardware.
+
+**The installer is the biggest untested thing in the repository.** The detached
+child in `lib/apply-update.js` waits for the app to exit, runs npm, and writes a
+result file. Every part of that is written but none of it has been observed
+end to end, because doing so needs a real global npm install of a version that
+is not the current one. Until that is done, treat the button as unproven and say
+so if asked.
 
 ---
 
@@ -72,12 +95,12 @@ audience.
 
 **Zero runtime dependencies.** This is what makes the published package also the
 source, which is what lets someone fork it with a file copy and no toolchain.
-*Reverses if* something genuinely cannot be done with the standard library —
+*Reverses if* something genuinely cannot be done with the standard library,
 nothing so far has come close.
 
 **State lives in `~/.claude/skills-manager/`, not the install directory.** Under
 `npx` the install directory is a cache npm replaces on every update. *Does not
-reverse* — this one is load-bearing.
+reverse*, because this one is load-bearing.
 
 **The session record is keyed per install.** Sharing it made a modified copy
 reopen the original's window and silently discard the user's work. *Does not
@@ -92,24 +115,75 @@ learns to install itself somewhere it fully controls.
 leave the original with no shortcut and no way to launch it, silently. The way
 out is always "give the name back" first.
 
+**No background auto-update, only an auto-check.** The process lives about two
+and a half minutes past the last open page, so there is no daemon to update on;
+silently rewriting the install directory of an app whose whole job is editing
+somebody's real `settings.json` is a trust problem rather than a convenience;
+and for a fork it would be destructive by definition. The setting is worded
+"check for updates automatically" because that is all it does. *Reverses if*
+the app ever becomes a long-running service, which nothing currently wants.
+
+**The network is opt-in, asked once, in the app.** Before this the app had never
+made an outbound request, and being able to say so plainly was worth something
+to anyone auditing it before letting it touch their config. *Does not reverse.*
+
+**The update command is always on screen, button or no button.** A button that
+silently replaces the thing it automates leaves people stuck when it fails.
+Pre-flight checks decide whether the button appears at all, so a failure is
+explained before it happens rather than reported after.
+
+**A copy never gets an update button.** Structural rather than a policy check:
+every install computes its kind from its own directory, and a copy lives in a
+folder the user chose, which is never `global`. Each window can only ever change
+the install it is running from. *Does not reverse.*
+
+**A copy does not update, and is not urged to.** A copy is made by cloning the
+project, so `origin` points at it and a pull would merge newer upstream code
+into work the user has been changing. Calling that "update" was wrong: for
+something handed over to be made their own, the default has to be that it stays
+as they left it. The pull is still offered, but folded away, under its own
+heading, described as the merge it is. *Reverses if* forks turn out to strand
+people on old versions in practice, in which case the answer is better merge
+guidance rather than a louder button.
+
+**A copy's window shows how to update the original, and does not do it.** The
+marker records where the original lives and how it was installed, which is
+enough to print the command. Running it from here would mean one window changing
+a different install, which is the property that makes any of this predictable.
+*Does not reverse.*
+
+**No em dashes anywhere public.** The user's standing rule, covering the README,
+the interface, package metadata and the comments. Rewrite the sentence rather
+than substituting a character. Recorded in CLAUDE.md under *Writing*.
+
 ---
 
 ## Live threads
 
 Nothing is blocking. These are the open ends, roughly in order of value.
 
-- **macOS and Linux verification.** The single biggest gap. Linux needs a WSL
-  distro (~500 MB) or a container; the user deferred this once already, so ask
-  rather than assume.
+- **Prove the installer.** See above. The way to do it is a real global install
+  of an older version, then use the button to go forward. Nothing else in the
+  repository is this untested.
+- **Version bump and publish.** The repository is ahead of npm by a whole
+  feature. Decide the number before publishing, not after.
+- **No GitHub Releases exist**, only a `v1.0.1` tag. The *What's new* panel is
+  built and works, but it has nothing to show until releases are published.
+  Publishing one for the next version is what switches the feature on.
+- **macOS and Linux verification.** The single biggest platform gap. Linux needs
+  a WSL distro (~500 MB) or a container; the user deferred this once already, so
+  ask rather than assume.
 - **npm account email is a Gmail plus-alias** (`+npm`). Stripping the suffix
   gives the real address, so it filters mail but conceals nothing. The user was
   told and left it. Changing it properly means another publish-then-unpublish
   cycle.
-- **The setup dialog says "around 2,000 lines".** It is closer to 2,800. Cosmetic
-  but it is the kind of claim that quietly stops being true.
+- **The setup dialog says "around 2,000 lines".** It is further out than it was.
+  Cosmetic, but it is the kind of claim that quietly stops being true.
 - **No issue template.** Bug reports need OS, Node version, and install method
-  (`npx` / `npm i -g` / clone) — those three decide which code path ran.
-- **Screenshots** are `docs/screenshot-*.png`, regenerable (see *Traps*).
+  (`npx` / `npm i -g` / clone), because those three decide which code path ran.
+- **Screenshots** are `docs/screenshot-*.png` and now predate the Settings
+  dialog, so the sidebar in them no longer matches the app. Regenerable, at the
+  cost described in *Traps*.
 
 ---
 
@@ -118,7 +192,7 @@ Nothing is blocking. These are the open ends, roughly in order of value.
 Things that cost time here and are not invariants, so they are not in CLAUDE.md.
 
 **Publishing needs a browser, not a code.** The npm account uses a passkey, so
-`npm publish` cannot prompt for a six-digit OTP — it prints a URL and waits for
+`npm publish` cannot prompt for a six-digit OTP. It prints a URL and waits for
 a browser approval. It must be run by the account holder; it cannot be automated
 from here.
 
@@ -144,19 +218,40 @@ in the repo.
 displayed. Reading the DOM is more dependable than screenshotting, and geometry
 assertions (`getBoundingClientRect`) beat eyeballing a picture.
 
+**A running server does not pick up changes to `lib/`.** `require` caches, so
+editing a module and then testing through the open page silently exercises the
+old code. Restart the server after touching anything outside `public/`. This
+produced a confusing "the feature does not work" for several minutes.
+
+**Animated panels are keyed to the `explainer` class.** The open and close
+transition lives on `.explainer.open .explainer-panel`, so a new collapsible
+that copies only the inner markup will toggle its class and animate nothing.
+Reuse the class rather than the structure.
+
+**Escaping Windows paths through the shell into `node -e` is not worth it.**
+An inline install-kind test came back all-wrong purely from backslash mangling
+and briefly looked like a real bug. Write the script to a file instead.
+
 ---
 
 ## How the user works
 
-- **Mockups before UI changes.** Any visual change gets drawn first — built with
-  the app's real stylesheet so it is a true likeness — and approved before
+- **Mockups before UI changes.** Any visual change gets drawn first, built with
+  the app's real stylesheet so it is a true likeness, and approved before
   implementation. This has caught real problems more than once.
+- **Thinks out loud, mid-task, and expects it to land.** Requirements arrive
+  while work is in progress and often change what has just been built. Fold them
+  in rather than deferring them, and say plainly when one contradicts an earlier
+  decision.
+- **Plain language over correct jargon.** "Uncommitted changes" and "a clone"
+  both had to be rewritten. If a sentence in the interface assumes git, npm, or
+  packaging knowledge, it is wrong, however accurate it is.
 - **Wants the reasoning, not just the answer.** Pushback with evidence is
   welcomed; several good decisions came from it.
 - **Prefers fewer, clearer options** over completeness. Two overlapping choices
   became one choice plus a checkbox at their prompting, and it was right.
 - **Cost-sensitive.** The tool is free and should stay free to build and ship.
-- **Asks "is this already handled?"** — answer honestly, including when it is not.
+- **Asks "is this already handled?"** Answer honestly, including when it is not.
 
 ---
 
@@ -168,8 +263,8 @@ regenerate every section above, append one line to the log below, and restamp
 the header. Do not edit around stale text.
 
 Not a slash command on purpose. A global `handoff` skill already exists and does
-something different — it compacts a conversation into a throwaway file in the OS
-temp directory — so a project skill of the same name would shadow it here. This
+something different, compacting a conversation into a throwaway file in the OS
+temp directory, so a project skill of the same name would shadow it here. This
 file is the opposite: durable, versioned, and regenerated in place.
 
 ---
@@ -178,7 +273,17 @@ file is the opposite: durable, versioned, and regenerated in place.
 
 Append-only. One line each, newest first.
 
-- **2026-08-01** — Made it cross-platform, packaged for npm, added the fork flow
+- **2026-08-01, later.** Added updates: an opt-in version check against npm, an
+  opt-in release-notes fetch from GitHub, version history with a way back to an
+  older version, and an installer that runs detached after the app exits so npm
+  can replace a folder Windows would otherwise hold open. Folded Default Claude
+  mode and Modify this app into a Settings dialog, leaving the two states behind
+  as sidebar banners that carry their own way out. Added a light and dark theme
+  setting and fixed five role colours that had never met contrast on white.
+  Removed every em dash from the repository as a standing rule. Corrected one
+  overstatement found in review: `git pull` does not discard uncommitted work,
+  it stops.
+- **2026-08-01.** Made it cross-platform, packaged for npm, added the fork flow
   and the "Modify this app" UI, wrote the docs, published v1.0.0 then v1.0.1 to
   npm and GitHub. Fixed two bugs that would have shipped: a shared session file
   that made a modified copy reopen the original, and a name collision that gave
