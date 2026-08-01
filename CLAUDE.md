@@ -101,6 +101,32 @@ Node 18+. `server.js` uses global `fetch` and `AbortSignal.timeout`.
 - **The server stops on its own** once no page has checked in for ~2.5 minutes,
   because a shortcut launch leaves no window to close.
 
+## The handoff document
+
+[docs/HANDOFF.md](docs/HANDOFF.md) carries the state of play between sessions:
+what is verified and what is not, which decisions still bind, what is open, and
+the traps that are not invariants. When asked to **"do the handoff document"**:
+
+1. **Re-read reality first.** Current `package.json` version, `git log -1`,
+   `git status`. Never carry a claim forward without checking it.
+2. **Regenerate every section**, rather than editing around what is there. Only
+   the session log is append-only — add one line, newest first.
+3. **Restamp the header** with today's date, the version, and the short commit
+   SHA. That stamp is what lets the next session detect a stale file.
+4. **Write down only what the repository cannot say.** If a fact lives in this
+   file, the README, or `git log`, link to it instead of copying it.
+5. **No line numbers, no code excerpts, no file trees.** They rot fastest, and
+   the file map above already exists.
+6. **Version-stamp every verification claim.** Say "unverified as of 1.0.1",
+   never "works on macOS". Overstating here is the one failure that matters.
+7. **The one-minute rule.** If a claim cannot be re-checked against the repo in
+   under a minute, leave it out.
+
+This is deliberately *not* a skill, because a global `handoff` skill already
+exists and does something different — it compacts a conversation into a
+throwaway file in the OS temp directory. A project skill of the same name would
+shadow it here.
+
 ## Testing changes
 
 There is no test suite. What is worth doing by hand after a change:
