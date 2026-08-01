@@ -2,15 +2,21 @@
 
 **As of 2026-08-01 · v1.0.1**
 
-> **Check this stamp first.** If `package.json` no longer reads 1.0.1, or
-> `git log --oneline --since=2026-08-01` shows commits that touched anything
-> outside `docs/`, then this document describes an older state, so trust the
-> repository over anything below, and regenerate it (see *Keeping this file
-> honest*).
+> **Check this stamp first.** If `package.json` no longer reads 1.0.1, or if
 >
-> Deliberately no commit SHA: a stamp can never name the commit that writes it,
-> so exact-SHA matching would report a false staleness forever. Date plus
-> version is checkable and does not lie.
+> ```bash
+> git log -1 --format=%h -- docs/HANDOFF.md
+> ```
+>
+> does not name the newest commit on the branch, then work has landed since this
+> was written. Trust the repository over anything below, and regenerate it (see
+> *Keeping this file honest*).
+>
+> Deliberately no commit SHA in the stamp: a stamp can never name the commit
+> that writes it, so exact-SHA matching would report a false staleness forever.
+> Asking git when this file was last touched sidesteps that, and unlike a date
+> comparison it does not trip the moment something else is committed on the same
+> day.
 
 Nothing here restates the code. Structure and invariants live in
 [CLAUDE.md](../CLAUDE.md); how to install and use it lives in
@@ -32,11 +38,12 @@ and given a supported way for other people to fork and modify it from inside the
 app itself.
 
 **The version on npm is behind the repository.** npm's latest is 1.0.1, and
-1.0.1 is also what `package.json` says, but the working tree now carries the
-whole Settings and updates feature described below. Nothing has been bumped or
-published. **A version bump is the next decision**, and it should happen before
-publishing, not after: the app reports its own `package.json` version, so an
-unbumped publish would leave every installed copy unable to tell the two apart.
+1.0.1 is also what `package.json` says, but `main` now carries the whole
+Settings and updates feature described below, committed and pushed to GitHub.
+Nothing has been bumped or published to npm. **A version bump is the next
+decision**, and it should happen before publishing, not after: the app reports
+its own `package.json` version, so an unbumped publish would leave every
+installed copy unable to tell the two apart.
 
 ---
 
@@ -280,9 +287,12 @@ Append-only. One line each, newest first.
   mode and Modify this app into a Settings dialog, leaving the two states behind
   as sidebar banners that carry their own way out. Added a light and dark theme
   setting and fixed five role colours that had never met contrast on white.
-  Removed every em dash from the repository as a standing rule. Corrected one
-  overstatement found in review: `git pull` does not discard uncommitted work,
-  it stops.
+  Removed every em dash from the repository as a standing rule. Two things were
+  corrected under questioning rather than found by testing: `git pull` does not
+  discard uncommitted work, it stops; and a copy should not be urged to pull at
+  all, because it is a clone and the pull would merge upstream code into the
+  user's own. A copy's Settings now names the two apps that exist and what
+  updating each one means. Committed and pushed; not published.
 - **2026-08-01.** Made it cross-platform, packaged for npm, added the fork flow
   and the "Modify this app" UI, wrote the docs, published v1.0.0 then v1.0.1 to
   npm and GitHub. Fixed two bugs that would have shipped: a shared session file
