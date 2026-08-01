@@ -7,6 +7,8 @@ installed, what state each one is in, and change that state without hand-editing
 Windows, macOS and Linux. Free, MIT licensed, and no dependencies: the whole app
 is Node's standard library, down to the icon.
 
+![The skills list, grouped by what each skill can actually do](https://raw.githubusercontent.com/npd1987/claude-skills-manager/main/docs/screenshot-main.png)
+
 ## Install
 
 One command, the same on every platform:
@@ -44,7 +46,11 @@ and `uninstall-shortcut` removes them again.
 
 The app can hand you your own copy to change in Claude Code — the sidebar's
 **Modify this app** card walks you through it, including whether your version
-sits alongside this one or replaces it. From a terminal, the same thing is:
+sits alongside this one or replaces it.
+
+![Choosing whether your copy sits alongside this one or replaces it](https://raw.githubusercontent.com/npd1987/claude-skills-manager/main/docs/screenshot-modify.png)
+
+From a terminal, the same thing is:
 
 ```bash
 npx claude-skills-manager dev
