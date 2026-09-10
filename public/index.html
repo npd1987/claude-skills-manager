@@ -4,12 +4,16 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Claude Skills</title>
+    <!-- The same file the desktop shortcut uses. A chrome-less app window has
+         no address bar to identify it, so this is also what Windows draws in
+         the taskbar, and without it the window gets a blank page icon. -->
+    <link rel="icon" type="image/png" href="/icon.png" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <header class="topbar">
       <div class="brand">
-        <span class="brand-mark"></span>
+        <img class="brand-mark" src="/icon.png" alt="" width="26" height="26" />
         <div>
           <!-- The version sits with the name and stays there. Which one you are
                running is the first thing you need when deciding whether to take
@@ -97,7 +101,13 @@
          its shape changes as you move through the steps. -->
     <div class="modal" id="setup" hidden>
       <div class="modal-panel wide" role="dialog" aria-modal="true" aria-labelledby="setup-title">
-        <h3 id="setup-title"></h3>
+        <!-- The heading and the way out travel together and stay pinned to
+             the top, because this panel scrolls and a Close button that has
+             scrolled away is not a way out. -->
+        <div class="modal-head">
+          <h3 id="setup-title"></h3>
+          <button class="icon-btn" data-close-setup aria-label="Close">&#10005;</button>
+        </div>
         <div id="setup-body"></div>
       </div>
     </div>

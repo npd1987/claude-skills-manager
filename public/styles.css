@@ -110,11 +110,13 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 
 .brand { display: flex; align-items: center; gap: 12px; }
 
+/* The generated icon itself rather than a square drawn to look like it, so
+   the mark in the corner, the browser tab and the taskbar are one drawing
+   instead of three that have to be kept in agreement. Its rounded plate and
+   transparent surround are part of the image. */
 .brand-mark {
   width: 26px;
   height: 26px;
-  border-radius: 7px;
-  background: linear-gradient(140deg, var(--accent), #a04d31);
   flex: none;
 }
 
@@ -885,6 +887,37 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 .modal-panel a:hover { filter: brightness(1.15); }
 
 .modal-panel h3 { font-size: 15px; margin-bottom: 8px; }
+
+.modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.modal-head h3 { margin-bottom: 0; }
+
+/* The title bar does not scroll, because it is not in the scrolling part.
+   The panel is a column of two: this bar, then the body, and the body is what
+   overflows. A sticky bar inside one scrolling box was the wrong shape for
+   this: content slid through the panel's own padding above it, which is what
+   you could see happening behind the title. */
+.modal-panel.wide .modal-head {
+  flex: none;
+  padding: 12px 14px 11px 18px;
+  border-bottom: 1px solid var(--line-soft);
+  border-radius: 12px 12px 0 0;
+}
+
+/* A square, quiet button for a glyph rather than a word. */
+.icon-btn {
+  flex: none;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.icon-btn:hover { background: var(--bg-hover); color: var(--text); }
 .modal-panel p { margin: 0 0 18px; font-size: 13px; color: var(--text-dim); }
 .modal-panel code { font-family: var(--mono); color: var(--text); }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
@@ -1036,8 +1069,26 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 /* ------------------------------------------------- modify this app / copy */
 
 /* Setup carries more than a confirmation does. */
-.modal-panel.wide { width: min(560px, 92vw); max-height: 88vh; overflow-y: auto; }
-.modal-panel.wide > p { margin: 0 0 16px; }
+.modal-panel.wide {
+  width: min(560px, 92vw);
+  max-height: 88vh;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* min-height on a flex child defaults to auto, which refuses to shrink below
+   the content and would push the scroll back out to the panel. */
+.modal-panel.wide > #setup-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 18px 18px;
+}
+
+.modal-panel.wide > #setup-body > p:first-child { margin-top: 0; }
+.modal-panel.wide > #setup-body > p { margin: 0 0 16px; }
 
 /* "What happens to the app I already have?" is the first thing anyone wonders,
    so it gets its own weight rather than being buried in a paragraph. */
@@ -1102,7 +1153,14 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 .choice.compact h6 { margin: 0; font-size: 12.5px; font-weight: 500; }
 .choice.compact .radio { margin-top: 0; }
 
-.choice:hover { border-color: var(--text-faint); }
+.choice:hover:not(:disabled) { border-color: var(--text-faint); }
+
+/* A way of opening the app that this browser has no way to deliver. Struck
+   through rather than dropped, matching what the skill cards do for states a
+   skill's own frontmatter rules out: a list that quietly changes length hides
+   the reason it changed. */
+.choice:disabled { opacity: 0.45; cursor: not-allowed; }
+.choice:disabled h6 { text-decoration: line-through; }
 .choice[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); }
 
 .choice .radio {

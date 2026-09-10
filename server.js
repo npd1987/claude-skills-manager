@@ -12,6 +12,7 @@ const platform = require('./lib/platform');
 const fork = require('./lib/fork');
 const updates = require('./lib/updates');
 const applyUpdate = require('./lib/apply-update');
+const prefs = require('./lib/prefs');
 const { NAME, VERSION, displayName, installKind } = require('./lib/app-info');
 const {
   SKILLS_DIR, TRASH_DIR, SETTINGS_FILE, DATA_DIR, CLAUDE_DIR,
@@ -25,6 +26,22 @@ const BASE_PORT = 7842;
 // Launched from a desktop shortcut there is no window to close, so the server
 // stops itself once no page is watching. The open page heartbeats well inside
 // this limit; miss enough of them and the process exits on its own.
+// How the app opens itself. A tab is what handing the URL to the desktop
+// gives, and is the only one every browser can do, so it is the default.
+const LAUNCH_MODES = ['tab', 'window', 'app'];
+
+// Chrome files a window's remembered size and position under the host and path
+// it was opened at, with the port and the query string left out. At "/" that
+// slot is shared with every other local tool that has ever opened a window on
+// 127.0.0.1, which is why a remembered shape can come back as somebody else's.
+// A path of our own is a slot of our own. The page itself is the same file.
+const APP_PATH = '/app';
+
+// Long enough that a page cannot turn a reload into a stream of helper
+// processes, short enough that a genuine relaunch is never refused.
+const MAXIMIZE_GAP_MS = 5_000;
+let lastMaximize = 0;
+
 const IDLE_LIMIT_MS = 150_000;
 const IDLE_CHECK_MS = 15_000;
 const GOODBYE_GRACE_MS = 8_000;
@@ -40,6 +57,16 @@ const MIME = {
   '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.ico': 'image/vnd.microsoft.icon',
+};
+
+// The icon is generated into assets/, not public/, because the desktop
+// shortcut and the page need the same drawing and only one of the two is a web
+// asset. Mapped by name rather than by opening assets/ to the web root.
+const ICONS = {
+  '/icon.png': path.join(__dirname, 'assets', 'icon.png'),
+  '/icon.ico': path.join(__dirname, 'assets', 'icon.ico'),
 };
 
 /* ------------------------------------------------------------------ helpers */
@@ -165,7 +192,45 @@ function state() {
       install: installKind(APP_DIR),
     },
     paths: { skills: SKILLS_DIR, settings: SETTINGS_FILE, trash: TRASH_DIR, claude: CLAUDE_DIR },
+    // What the browser can do is read from the detection that ran at startup,
+    // so the page can strike out the modes this browser has no way to deliver
+    // and say which browser it is talking about.
+    launch: (() => {
+      const browser = platform.knownBrowser();
+      return {
+        mode: launchMode(),
+        browser,
+        modes: platform.browserModes(browser),
+        shape: prefs.read().windowShape || null,
+      };
+    })(),
   };
+}
+
+/**
+ * Opens the app, and when the window it is about to ask for was left maximized,
+ * starts the helper that will maximize it.
+ *
+ * Started here rather than waiting to be asked, because the helper polls for
+ * the window by title and can be compiled and waiting before there is one. Sent
+ * for once the page has loaded instead, everything it costs happens in front of
+ * the user: the window sits a frame short of maximized for a second and a half
+ * and then snaps. The page still asks, as the backstop for a browser that took
+ * longer to show a window than the helper waits.
+ */
+async function openApp(url) {
+  await openBrowser(url, launchMode());
+  const shape = prefs.read().windowShape;
+  if (launchMode() === 'app' && shape && shape.maximized) {
+    lastMaximize = Date.now();
+    platform.maximizeWindow(displayName());
+  }
+}
+
+/** The stored launch mode, falling back to a tab if the file says anything else. */
+function launchMode() {
+  const stored = prefs.read().launchMode;
+  return LAUNCH_MODES.includes(stored) ? stored : 'tab';
 }
 
 // Folders the page may ask to open in the file manager: this install, and
@@ -192,7 +257,12 @@ const routes = {
     return { ok: true };
   },
 
-  'GET /api/state': async () => state(),
+  // Detection is awaited rather than raced, so the first paint already knows
+  // which browser this is. It resolves once and every later call is instant.
+  'GET /api/state': async () => {
+    await platform.detectBrowser();
+    return state();
+  },
 
   // Launched from a shortcut there is no console to close, so the UI offers a
   // way out. Reply first, then shut down.
@@ -281,6 +351,66 @@ const routes = {
     if (!orphans.length) return state();
     settings.applyOverrides(SETTINGS_FILE, Object.fromEntries(orphans.map((o) => [o.name, null])), {});
     return state();
+  },
+
+  // Takes effect the next time the app is launched. Nothing reopens the
+  // window that is asking, because that would close the page mid-click.
+  'POST /api/launch-mode': async (body) => {
+    const mode = body && body.mode;
+    if (!LAUNCH_MODES.includes(mode)) throw new Error(`Unknown launch mode: ${mode}`);
+
+    const browser = await platform.detectBrowser();
+    if (!platform.browserModes(browser)[mode]) {
+      throw new Error(`${browser ? browser.name : 'This browser'} cannot open the app that way.`);
+    }
+
+    prefs.write({ launchMode: mode });
+    return state();
+  },
+
+  // The page measuring its own window, because Chrome will not restore an
+  // ad-hoc app window itself. Bounds are sanity-checked rather than trusted:
+  // this arrives from a page, and a nonsense shape would open a window nobody
+  // can reach.
+  'POST /api/shape': async (body) => {
+    const shape = body && typeof body === 'object' ? body : null;
+    if (!shape) throw new Error('Missing shape');
+
+    const num = (value, min, max) => {
+      const n = Number(value);
+      return Number.isFinite(n) && n >= min && n <= max ? Math.round(n) : null;
+    };
+
+    const width = num(shape.width, 320, 20000);
+    const height = num(shape.height, 240, 20000);
+    const left = num(shape.left, -20000, 20000);
+    const top = num(shape.top, -20000, 20000);
+    if (width === null || height === null || left === null || top === null) {
+      throw new Error('Shape out of range');
+    }
+
+    prefs.write({
+      // Recorded as a state, not as the size it happens to have. The page can
+      // tell that it fills the work area, which is all it needs to say; making
+      // the window actually maximized is the desktop's job at launch.
+      windowShape: { width, height, left, top, maximized: shape.maximized === true },
+    });
+    return { saved: true };
+  },
+
+  // Asked for by the page once it has loaded, which is the first moment the
+  // window it lives in is certain to exist and to be carrying its own title.
+  // The launcher cannot do this at spawn time, and on the reuse path it has
+  // already exited by the time there is a window to act on.
+  //
+  // Rate limited because it reaches outside the app: a page that asked in a
+  // loop would spawn a helper process per request.
+  'POST /api/maximize': async () => {
+    if (launchMode() !== 'app') return { maximized: false, why: 'not an app window' };
+    const now = Date.now();
+    if (now - lastMaximize < MAXIMIZE_GAP_MS) return { maximized: false, why: 'too soon' };
+    lastMaximize = now;
+    return { maximized: platform.maximizeWindow(displayName()) };
   },
 
   'POST /api/doc': async (body) => {
@@ -421,9 +551,10 @@ const routes = {
 /* ------------------------------------------------------------------- server */
 
 function serveStatic(req, res, urlPath) {
-  const rel = urlPath === '/' ? 'index.html' : urlPath.replace(/^\/+/, '');
-  const file = path.join(PUBLIC_DIR, rel);
-  if (!file.startsWith(PUBLIC_DIR) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
+  const icon = ICONS[urlPath];
+  const rel = urlPath === '/' || urlPath === APP_PATH ? 'index.html' : urlPath.replace(/^\/+/, '');
+  const file = icon || path.join(PUBLIC_DIR, rel);
+  if ((!icon && !file.startsWith(PUBLIC_DIR)) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
     return send(res, 404, 'Not found', { 'Content-Type': 'text/plain' });
   }
   send(res, 200, fs.readFileSync(file), {
@@ -454,7 +585,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method !== 'GET') return send(res, 405, 'Method not allowed', { 'Content-Type': 'text/plain' });
 
   // The token rides in on the page URL; the page then keeps it in memory.
-  if (url.pathname === '/') {
+  if (url.pathname === '/' || url.pathname === APP_PATH) {
     if (url.searchParams.get('token') !== TOKEN) {
       return send(res, 403, 'Open this app from the link printed in the terminal.', {
         'Content-Type': 'text/plain; charset=utf-8',
@@ -512,7 +643,7 @@ async function findLiveInstance() {
       signal: AbortSignal.timeout(700),
     });
     if (!res.ok) return null;
-    return `${url}/?token=${session.token}`;
+    return `${url}${APP_PATH}?token=${session.token}`;
   } catch {
     // Stale file from a crashed or killed run.
     return null;
@@ -523,7 +654,7 @@ async function findLiveInstance() {
 // behind on every port retry, and they would all fire on the eventual success.
 server.on('listening', () => {
   const { port } = server.address();
-  const url = `http://${HOST}:${port}/?token=${TOKEN}`;
+  const url = `http://${HOST}:${port}${APP_PATH}?token=${TOKEN}`;
 
   fs.mkdirSync(SESSIONS_DIR, { recursive: true });
   fs.writeFileSync(SESSION_FILE, JSON.stringify({ port, token: TOKEN, pid: process.pid }), 'utf8');
@@ -535,7 +666,7 @@ server.on('listening', () => {
   console.log('');
   console.log('  Close this window, or use Quit in the app, to stop it.');
   console.log('');
-  openBrowser(url);
+  openApp(url);
 
   lastSeen = Date.now();
   const idleTimer = setInterval(() => {
@@ -575,7 +706,8 @@ async function start() {
   const live = await findLiveInstance();
   if (live) {
     console.log(`\n  ${NAME} is already running. Opening it.\n`);
-    openBrowser(live);
+    // Awaited, because exiting first would kill the lookup before it spawns.
+    await openApp(live);
     process.exit(0);
   }
   listen(BASE_PORT);

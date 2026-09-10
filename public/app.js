@@ -109,6 +109,12 @@ let scope = localStorage.getItem('claude-skills-scope') === 'projects' ? 'projec
 
 /* ----------------------------------------------------------------- theme */
 
+const LAUNCH_SAID = {
+  tab: 'It will open in a tab from now on.',
+  window: 'It will open in a window of its own from now on.',
+  app: 'It will open in an app window from now on.',
+};
+
 const THEMES = [
   { value: 'system', label: 'Match my system' },
   { value: 'light', label: 'Light' },
@@ -315,6 +321,30 @@ async function step(direction) {
 async function load() {
   try {
     data = await api('/api/state');
+    // Once per page. A later refresh must not move a window the user has since
+    // put where they want it.
+    // The cached shape has usually done this already; this is the fallback for
+    // a browser that lost its storage, and the authority if the two disagree.
+    const shape = data.launch && data.launch.shape;
+
+    // The cached shape has usually sized the window already; this is the
+    // fallback for a browser that lost its storage.
+    if (!shapeRestored) {
+      shapeRestored = true;
+      if (ownsWindow()) applyShape(shape);
+    }
+
+    // Asked for separately, and never folded into the branch above. The sizing
+    // there is often already done by the time we reach it, and a maximize that
+    // only happened when it was not would be one that mostly never happened.
+    if (!maximizeAsked && ownsWindow() && shape && shape.maximized) {
+      maximizeAsked = true;
+      fetch(`/api/maximize?token=${TOKEN}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-skills-token': TOKEN },
+        body: '{}',
+      }).catch(() => {});
+    }
     render({ rebuild: true });
     return true;
   } catch (err) {
@@ -1064,6 +1094,68 @@ function rollbackSection() {
     </section>`;
 }
 
+const LAUNCH_CHOICES = [
+  { value: 'tab', label: 'A tab', hint: 'Opens in the browser window you already have open.' },
+  {
+    value: 'window',
+    label: 'Its own window',
+    hint: 'A browser window of its own, with the address bar and tabs.',
+  },
+  {
+    value: 'app',
+    label: 'An app window',
+    hint: 'No address bar and no tabs, so it looks like a desktop app. It reopens at the size you left it.',
+  },
+];
+
+/**
+ * Why a way of opening is not on offer. The browser is named rather than
+ * blamed in the abstract, so a struck-out option reads as a fact about this
+ * machine rather than something the app decided on its own.
+ */
+function launchWhy(browser) {
+  if (!browser) return 'Needs a browser this app can find and start itself.';
+  if (browser.family === 'firefox') {
+    return `${browser.name} has no chrome-less mode. Chrome, Edge or Brave can do this.`;
+  }
+  return `This app cannot start ${browser.name} itself. Chrome, Edge, Brave or Firefox can do this.`;
+}
+
+/**
+ * Options the browser cannot deliver are struck through rather than dropped,
+ * following the same rule the skill cards use for states a skill's frontmatter
+ * rules out: a list that quietly changes length hides the reason it changed.
+ */
+function launchSection() {
+  const launch = data.launch || { mode: 'tab', browser: null, modes: { tab: true } };
+  const { browser, modes } = launch;
+
+  return `
+    <section class="settings-section">
+      <h5>How it opens</h5>
+      <p>${
+        browser
+          ? `Your default browser is ${esc(browser.name)}.`
+          : `This app could not work out which browser is your default, so it can only hand the
+             address to the system and let it decide.`
+      }</p>
+      <div class="choices" role="radiogroup">
+        ${LAUNCH_CHOICES.map((option) => {
+          const can = modes[option.value] === true;
+          return `
+          <button class="choice" role="radio" data-set-launch="${option.value}"
+                  aria-checked="${launch.mode === option.value}"${can ? '' : ' disabled'}>
+            <span class="radio"></span>
+            <span>
+              <h6>${esc(option.label)}</h6>
+              <p>${esc(can ? option.hint : launchWhy(browser))}</p>
+            </span>
+          </button>`;
+        }).join('')}
+      </div>
+    </section>`;
+}
+
 function paintSettings() {
   const copy = data.app && data.app.copy;
 
@@ -1082,6 +1174,7 @@ function paintSettings() {
 
     ${updatesSection()}
     ${rollbackSection()}
+    ${launchSection()}
 
     <section class="settings-section">
       <h5>Default Claude mode</h5>
@@ -1122,6 +1215,21 @@ function wireSettings(modal) {
       // Repainted rather than patched, so the chosen option is marked without
       // a second source of truth for which one that is.
       paintSettings();
+    };
+  }
+
+  // Applies to the next launch, never to the window doing the asking: opening
+  // a second one from here would leave the user looking at two.
+  for (const btn of modal.querySelectorAll('[data-set-launch]')) {
+    btn.onclick = async () => {
+      const mode = btn.dataset.setLaunch;
+      try {
+        data = await api('/api/launch-mode', { mode });
+        paintSettings();
+        toast(LAUNCH_SAID[mode]);
+      } catch (err) {
+        toast(err.message, true);
+      }
     };
   }
 
@@ -2005,6 +2113,174 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+/* ----------------------------------------------------------- window shape */
+
+// Chrome will not restore the size and position of a window opened with --app:
+// it writes the placement down and then never reads it back, because an ad-hoc
+// app window has no installed app to attach the record to. What it does allow,
+// uniquely for these windows, is the page resizing itself. So the app measures
+// its own window, hands the numbers to the server, and puts itself back the
+// same shape next time.
+//
+// Only an app window can do this. A tab has no window of its own to speak of,
+// and Chrome refuses resizeTo on an ordinary browser window, which is why the
+// setting says this of the app window option alone.
+
+// A maximized window's frame hangs off every edge of the work area by a border
+// width, so both the saved size and the clamp have to allow for going slightly
+// past the screen. Clamping to the work area is what left a restored window
+// looking almost, but not quite, maximized.
+const OVERHANG = 16;
+
+// Versioned, because a shape cached before this key existed has no record of
+// whether the window was maximized, and restoring it as a plain size would
+// undo the maximize the desktop was just asked for.
+const SHAPE_KEY = 'claude-skills-window-shape-2';
+
+// Whether this page has a window to call its own. Taken from the setting the
+// app was launched under rather than sniffed from the window, because the
+// browser reports an app window as an ordinary one and there is no property
+// that reliably tells them apart.
+const ownsWindow = () => Boolean(data && data.launch && data.launch.mode === 'app');
+
+/** The window as it is now, or null when there is nothing meaningful to record. */
+function currentShape() {
+  const width = Math.round(window.outerWidth);
+  const height = Math.round(window.outerHeight);
+  if (!width || !height) return null;
+  return {
+    width,
+    height,
+    left: Math.round(window.screenX),
+    top: Math.round(window.screenY),
+    // Filling the work area is what a maximized window looks like from in here.
+    // The page cannot see the frame's overhang past it and so cannot reproduce
+    // it, which is why this is a flag for the launcher rather than a size.
+    maximized: width >= screen.availWidth - 12 && height >= screen.availHeight - 12,
+  };
+}
+
+let lastReported = '';
+
+function reportShape(viaBeacon) {
+  if (!ownsWindow()) return;
+  const shape = currentShape();
+  if (!shape) return;
+
+  const body = JSON.stringify(shape);
+  if (!viaBeacon && body === lastReported) return;
+  lastReported = body;
+
+  // Kept here as well as on the server, so the next launch can put the window
+  // right without waiting for a reply first. The server's copy is the durable
+  // one; this is only ever a head start.
+  try {
+    localStorage.setItem(SHAPE_KEY, body);
+  } catch {
+    /* a browser refusing storage still has a server to fall back on */
+  }
+
+  if (viaBeacon) {
+    // The last word on the way out, and the only one that catches a resize
+    // made in the seconds before closing.
+    navigator.sendBeacon(`/api/shape?token=${TOKEN}`, new Blob([body], { type: 'application/json' }));
+    return;
+  }
+  fetch(`/api/shape?token=${TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-skills-token': TOKEN },
+    body,
+  }).catch(() => {});
+}
+
+/**
+ * The two calls cannot go together. A window that has only just opened is
+ * still settling into the size the browser gave it, and a move issued in the
+ * same task lands somewhere else entirely: asking for y=180 while the window
+ * is still 1060 tall puts it at y=20, where a 1060-tall window has to sit to
+ * fit the screen. So the move waits for the resize to take, and then checks
+ * its own work once.
+ */
+function place(left, top, width, height) {
+  window.resizeTo(width, height);
+  setTimeout(() => {
+    window.moveTo(left, top);
+    setTimeout(() => {
+      const off = Math.abs(window.screenX - left) > 2 || Math.abs(window.screenY - top) > 2;
+      // One correction, never a loop: a window manager that refuses the second
+      // attempt would refuse the hundredth.
+      if (off) {
+        window.resizeTo(width, height);
+        window.moveTo(left, top);
+      }
+    }, 220);
+  }, 140);
+}
+
+/**
+ * Puts the window back the shape it was left. The saved numbers are used as
+ * they stand, rather than being recognised as "maximized" and swapped for the
+ * work area, because those are not the same rectangle and the difference shows.
+ */
+function applyShape(shape) {
+  if (!shape || !shape.width || !shape.height) return;
+  // A maximized window is filled in twice. This is the near miss, and it is
+  // instant: the work area is every pixel a page can reach, which leaves the
+  // window a frame's width short of a real maximize on each edge. The desktop
+  // is asked for the real thing at the same time and takes a few seconds to
+  // answer, because it costs a process and a compile to ask. Doing both means
+  // the window is the right size straight away and exactly right shortly
+  // after, rather than sitting at the browser's default in the meantime.
+  if (shape.maximized) {
+    // Done in one go, with none of place()'s deferred correction. That
+    // correction exists to fight a window that has not settled yet, but here
+    // it would be fighting the desktop instead: the real maximize lands a
+    // moment later, and a late resizeTo would take the window straight back
+    // out of it. Filling the work area now is only a stand-in until it does.
+    window.resizeTo(screen.availWidth, screen.availHeight);
+    window.moveTo(screen.availLeft || 0, screen.availTop || 0);
+    return;
+  }
+  try {
+    const width = Math.min(shape.width, screen.width + OVERHANG * 2);
+    const height = Math.min(shape.height, screen.height + OVERHANG * 2);
+    // Enough of the window has to land on the screen in front of the user for
+    // it to be reachable, which a shape saved on a monitor since unplugged
+    // would not manage on its own.
+    place(
+      Math.max(-OVERHANG, Math.min(shape.left, screen.availWidth - 120)),
+      Math.max(-OVERHANG, Math.min(shape.top, screen.availHeight - 120)),
+      width,
+      height
+    );
+  } catch {
+    /* A browser that refuses is a browser that keeps its own shape. */
+  }
+}
+
+let shapeRestored = false;
+let maximizeAsked = false;
+
+/**
+ * Done once per page, as early as there is anything to go on. The window opens
+ * at a size the browser chose and only a script in the page can change it, so
+ * some of that first shape is always visible: this is about making it brief
+ * rather than making it disappear.
+ */
+function restoreShapeEarly() {
+  let cached = null;
+  try {
+    cached = JSON.parse(localStorage.getItem(SHAPE_KEY));
+  } catch {
+    /* ignore */
+  }
+  // Only ever written by a session that had a window of its own, so its
+  // presence is the signal. In a tab the browser refuses the resize anyway.
+  if (!cached) return;
+  shapeRestored = true;
+  applyShape(cached);
+}
+
 /* -------------------------------------------------------------- heartbeat */
 
 // The server exits when nothing is watching, so a closed tab never leaves a
@@ -2012,7 +2288,12 @@ document.addEventListener('keydown', (e) => {
 let quitting = false;
 
 setInterval(() => {
-  if (!quitting) fetch(`/api/ping?token=${TOKEN}`).catch(() => {});
+  if (quitting) return;
+  fetch(`/api/ping?token=${TOKEN}`).catch(() => {});
+  // Rides along with the heartbeat rather than on a timer of its own, and only
+  // says anything when the shape actually changed. Without this, a window
+  // closed in a way that loses the beacon would forget the last resize.
+  reportShape(false);
 }, 25_000);
 
 // Browsers throttle timers in background tabs, so check in on the way back.
@@ -2024,9 +2305,11 @@ addEventListener('pagehide', () => {
   if (quitting) return;
   // sendBeacon survives the page going away; a normal fetch would be cancelled.
   // A reload checks straight back in, so the server only acts on a real close.
+  reportShape(true);
   navigator.sendBeacon(`/api/bye?token=${TOKEN}`);
 });
 
+restoreShapeEarly();
 loadHistory();
 
 // A browser reload and the Refresh button do the same work, so say the same
