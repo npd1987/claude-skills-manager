@@ -110,6 +110,10 @@ icon and no documents. `npx claude-skills-manager@latest` and `npm i -g claude-s
 both give this round's work from now on, and anyone on 1.1.0 who allowed the update check is offered
 it within a day.
 
+**1.1.2 followed the same day**, documentation only: the README had the two ways of installing split
+apart, and npm serves the README from inside the tarball, so the page there only catches up on a
+publish. Tag and GitHub release cut after the fix this time, not before.
+
 **The tag had to be moved after the fact.** It was cut at the version bump and two commits landed
 after it, so it pointed at code that was never published. `npm publish` packs the working tree and
 never the tag, so the package was right and only the marker was wrong. **Cut the tag last, or move

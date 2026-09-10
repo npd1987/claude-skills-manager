@@ -3,7 +3,7 @@
 Written to be picked up cold, and **deliberately short**. Last updated 2026-09-10, by the handoff
 method in **setup** mode.
 
-## 0. Start here. **1.1.1 is published, and the round that produced it is closed**
+## 0. Start here. **1.1.2 is published, and the round that produced it is closed**
 
 | | |
 | :--- | :--- |
@@ -19,7 +19,7 @@ method in **setup** mode.
 | Branch | `main`. `git log --oneline -5` is the truth about commits, never an id written here |
 | Working tree | **Committed and pushed.** Two commits: the app, then the documents. `git status` is the truth |
 | Pushed | **YES**, to `npd1987/claude-skills-manager`, branch `main`, which is public |
-| Released | **YES. 1.1.1, published 2026-09-10 by the user.** `npm view claude-skills-manager version` is the truth |
+| Released | **YES. 1.1.1 and then 1.1.2, both published 2026-09-10 by the user.** 1.1.2 is documentation only. `npm view claude-skills-manager version` is the truth |
 | Build | **There is no build step.** `node --check` passes on every file this round touched: `server.js`, `lib/platform.js`, `lib/prefs.js`, `lib/updates.js`, `public/app.js` |
 | Checks run | The by-hand list in [CLAUDE.md](../CLAUDE.md) *Testing changes*: a skill state changed and restored, two backups confirmed in `~/.claude/backups/`, `settings.json` still valid JSON and byte identical afterwards. The launch setting, the icon, the modal header, the window shape restore and the maximize were each driven and measured, the maximize by watching the real window every 120ms through a real launch |
 | Checks not run | **Anything on macOS or Linux**, which is every platform path added this round except the Windows one. The installer, still never run, OI-2 |
@@ -87,9 +87,10 @@ method in **setup** mode.
 
 - **Committed:** YES.
 - **Pushed:** YES, to `npd1987/claude-skills-manager` on `main`, tagged `v1.1.1`.
-- **Released:** **YES, 1.1.1 on npm.** Verified from the registry: 29 files, 381kB unpacked.
-- **Released on GitHub too**, on `v1.1.1`, so *What's new* has notes to show. Checked through the
-  same endpoint `lib/updates.js` uses: 200, not a draft, 864 characters of body.
+- **Released:** **YES, 1.1.2 on npm**, after 1.1.1 earlier the same day. Verified from the registry
+  and from inside the published tarball: 29 files, 381kB unpacked, the corrected README.
+- **Released on GitHub too**, on `v1.1.1` and `v1.1.2`, so *What's new* has notes for both. Each was
+  checked through the same endpoint `lib/updates.js` uses: 200, not a draft, a body with text in it.
 
 ## 8. What no check can say
 
