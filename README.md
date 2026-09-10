@@ -27,10 +27,40 @@ That is the whole thing. It downloads, starts, and opens in your browser. Needs
 Launching it again while it's already running reopens the existing tab rather
 than starting a second copy.
 
-**Stopping it.** Use **Quit** in the top right, or just close the tab. The page
-checks in while it's open, and the server shuts itself down about 15 seconds
-after the last one goes away. It never lingers in the background. Reloading is
-safe.
+**Stopping it.** Use **Quit** in the top right, or just close the tab. Quit
+stops it at once. Closing the tab takes a little longer: the page says goodbye on
+its way out, and the server then stops at its next check, which is within about
+half a minute. It never lingers in the background, and reloading is safe.
+
+### How it opens
+
+By default the app opens in a tab of whatever browser you already have running.
+**Settings** has a **How it opens** section with three choices:
+
+| Choice | What you get |
+| :--- | :--- |
+| **A tab** | The default, and the only one that works whatever your browser is |
+| **Its own window** | A browser window of its own, with the address bar and tabs |
+| **An app window** | No address bar and no tabs, so it looks like a desktop app |
+
+The last two mean the app has to start your browser itself rather than handing
+the address to your system, so it works out which browser is your default and
+starts that. A choice your browser cannot deliver is **struck through with the
+reason** rather than hidden, and the section names the browser it found, so a
+missing option reads as a fact about your machine rather than something the app
+decided.
+
+**An app window remembers its shape.** It reopens at the size and position you
+left it, and if you left it maximized it opens maximized: the real thing your
+window manager does, not a window stretched to fill the screen, which is a
+different state and looks it. On macOS that asks for accessibility permission
+the first time, and on Linux it needs `wmctrl`.
+
+### Light or dark
+
+**Settings** has an **Appearance** choice: follow your system, or pin light or
+dark. Both are drawn properly rather than one being the other with the colours
+inverted, so nothing goes faint in either.
 
 ### A shortcut instead of a command
 
@@ -297,6 +327,7 @@ lib/platform.js      every Windows/macOS/Linux difference
 lib/shortcut.js      desktop shortcuts on the three platforms
 lib/fork.js          making and managing your own copy
 lib/app-info.js      what this copy is called, and how it was installed
+lib/prefs.js         the small preferences file the app keeps for itself
 lib/updates.js       the version check, and what to do about a new one
 lib/apply-update.js  installing a version, forwards or back
 public/              the interface
@@ -311,7 +342,8 @@ Your settings and folder list live outside the app, in
 ```
 snapshot.json        created only while Default Claude mode is on
 folders.json         folders you added by hand
-prefs.json           whether the update check may run, and what it last found
+prefs.json           whether the update check may run and what it last found,
+                     how the app opens, and the shape its window was left in
 last-update.json     how the last install went, read once and cleared
 sessions/            one file per installed copy, recording the live instance
 ```
