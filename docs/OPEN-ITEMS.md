@@ -22,10 +22,12 @@ to copy it forward.
 
 **Opened 1.1.0, closable by the user.** The detached child in `lib/apply-update.js` waits for the app
 to exit, runs npm, and writes a result file. Every part is written and none has been observed end to
-end. It is the biggest untested thing in the repository. It became testable when 1.1.0 shipped:
-install 1.1.0 globally with `npm i -g claude-skills-manager`, open Settings, and use the version
-history to go back to 1.0.1, which exercises the same detached installer path with a number that
-exists. Going back to 1.1.0 afterwards is the same operation again.
+end. It is the biggest untested thing in the repository. **Updated 2026-09-10**: there are now four
+published versions, so the test is cheaper than it was. Install the current one globally with
+`npm i -g claude-skills-manager`, open Settings, and use the version history to go back to 1.1.1,
+which exercises the detached installer with a number that exists and a change small enough to see.
+Coming forward again is the same operation. **Measure the version in the window afterwards, not the
+button**, and the app writes its own report of how npm went, which is the thing to read.
 
 ### OI-3. macOS and Linux have never run this
 

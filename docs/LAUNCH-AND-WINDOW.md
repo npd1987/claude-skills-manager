@@ -62,6 +62,15 @@ Three things now point at the one file, so they cannot drift apart:
 **Chrome caches favicons per profile**, so an app window that was open before this change keeps the
 globe until it is closed and reopened.
 
+**The file was then 372kB, and is now 48kB.** An `.ico` entry holds uncompressed BGRA unless it
+holds a PNG, so the 256 px size cost 262kB on its own and the icon was about half of everything the
+package unpacked to. `tools/make-icon.js` writes the 128 and 256 entries as PNG from 1.1.1 onward.
+Measured after the change: `icon.png` and `icon.icns` come out byte for byte identical, so nothing
+but the `.ico` moved, and the Win32 icon loader the shell uses returns all seven sizes with the
+right pixels in them. **The legacy `System.Drawing.Icon.ToBitmap()` cannot read a PNG entry and
+throws on those two sizes**, which is a fact about that old API rather than about the file: nothing
+in this project uses it, and the page's own favicon is `icon.png` and never touched this file.
+
 ## 3. Remembering the window's shape
 
 Chrome will not restore the size and position of a window opened with `--app`. It writes the

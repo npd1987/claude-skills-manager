@@ -18,11 +18,9 @@ cannot afford to lose.
 **That is the whole cold start.** Open a feature document when you are about to touch that
 feature, never to find out what happened last.
 
-**If this copy has no `docs/` folder**, it was made from the published package, which carries the
-app and not the project's working notes: they are 27kB nobody running the app needs. They are in the
-repository, at <https://github.com/npd1987/claude-skills-manager/tree/main/docs>, and a copy made by
-`git clone` has them on disk. Read them there and carry on. **Nothing in the app depends on them**,
-so their absence breaks nothing except this file's first instruction.
+**No `docs/` folder here?** This copy came from the published package, which ships the app without
+them. They are at <https://github.com/npd1987/claude-skills-manager/tree/main/docs>, a `git clone`
+has them on disk, and nothing in the app depends on them.
 
 | What you want | Where it is |
 | :--- | :--- |
@@ -54,6 +52,7 @@ lib/projects.js      finds project folders, remembers ones added by hand
 lib/settings.js      reads/writes skillOverrides: backups, atomic writes
 lib/frontmatter.js   SKILL.md frontmatter parser
 lib/paths.js         every path the app touches, plus legacy-data migration
+lib/prefs.js         the preferences file: update consent, launch mode, window shape
 lib/platform.js      every difference between Windows, macOS and Linux
 lib/shortcut.js      desktop shortcuts on the three platforms
 lib/fork.js          making and managing someone's own copy of the app
@@ -134,9 +133,8 @@ Windows and macOS are case-insensitive; Linux is not, and lowercasing there
 silently merges two genuinely different folders into one.
 
 **The live-instance record is per install.** `lib/paths.js` keys the session file
-by a hash of the install directory. Share it between copies and launching a
-modified copy hands you the original's window instead, discarding every change
-the user made without a word.
+by a hash of the install directory. Shared, a modified copy hands you the
+original's window and silently discards the user's work.
 
 **Project settings go in `.claude/settings.local.json`.** The gitignored one, so
 the app never dirties a file the user's repo shares with other people.
@@ -164,14 +162,11 @@ Node 18+. `server.js` uses global `fetch` and `AbortSignal.timeout`.
   `skillOverrides` plus its own frontmatter, so `disable-model-invocation: true`
   rules out *Auto* and *Name only* no matter what the settings file says. See
   `lib/skills.js`.
-- **Both themes are written out, and neither is the other one reused.** The role
-  colours (`--on`, `--nameonly`, `--slash`, `--danger`, `--accent`) were drawn
-  for a near-black background and fall below 4.5:1 on white, the amber worst of
-  all. `public/styles.css` declares the light values twice on purpose: once
-  under `prefers-color-scheme` for anyone who has never opened Settings, once
-  under `:root[data-theme="light"]` for anyone who has chosen. Collapsing that
-  into one costs either a flash of the wrong theme on load or an override the
-  user cannot undo. Check any new colour against both.
+- **Both themes are written out, and neither is the other one reused.** The light
+  values are declared twice in `public/styles.css` on purpose, and collapsing
+  that costs either a flash of the wrong theme or an override the user cannot
+  undo. **Check any new colour against both.** The reasoning is in
+  docs/DECISIONS.md, *Both themes are written out*.
 - **The sidebar holds states, not settings.** Anything that is genuinely a
   setting belongs in the Settings dialog. Default Claude mode being on, and this
   being someone's own copy, stay in the sidebar as banners because they are

@@ -11,6 +11,18 @@ reading it.
 
 ---
 
+## CUT THE TAG LAST, AND KNOW WHAT EACH PUBLISH ACTUALLY PACKS. 1.1.1
+
+`npm publish` packs the working tree and never a tag, so a tag cut at the version bump marks code
+that was never published as soon as anything lands after it. That happened on `v1.1.1` and the tag
+had to be force moved, which is a rewrite of something already on GitHub and needs the user's word.
+**Bump, finish, then tag, then publish.**
+
+**npm serves the README from inside the tarball**, so a README fix is invisible on npmjs.com until
+the next publish, while GitHub shows it the moment it is pushed. A documentation only patch release
+is the only way to close that gap, and it offers every user an update with nothing in it, so it is a
+choice rather than an obligation. 1.1.2 was exactly that.
+
 ## A DETACHED PROCESS ON WINDOWS GETS NO CONSOLE, AND POWERSHELL WILL NOT RUN WITHOUT ONE. 2026-09-10
 
 `spawn(cmd, args, { detached: true })` becomes the `DETACHED_PROCESS` creation flag on Windows, and a

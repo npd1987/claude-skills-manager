@@ -16,6 +16,8 @@ scratch.
 | **Zero runtime dependencies** | This is what makes the published package also the source, which is what lets someone fork it with a file copy and no toolchain. *Reverses if* something genuinely cannot be done with the standard library. Nothing has come close |
 | **State lives in `~/.claude/skills-manager/`, not the install directory** | Under `npx` the install directory is a cache npm replaces on every update. *Does not reverse*, this one is load bearing |
 | **The session record is keyed per install** | Sharing it made a modified copy reopen the original's window and silently discard the user's work. *Does not reverse* |
+| **The npm package carries the app, not the project's working notes** | `docs/*.md` is 27kB nobody running the app needs, and *Modify this app* prefers a `git clone`, which takes the whole repository whatever the app was installed with. `CLAUDE.md` says where the documents are for the no-git fallback. Decided 2026-09-10. *Reverses if* the fallback ever becomes the common path |
+| **Large `.ico` entries are PNG** | 372kB to 48kB, and the shell reads them. Decided 2026-09-10 with the user, who asked for the package to be as lean as possible. *Reverses if* something in the toolchain turns out to need uncompressed entries |
 
 ## Updating, and the network
 
@@ -46,6 +48,16 @@ scratch.
 | **The app window opens at its own path, `/app`** | Chrome files a window's remembered placement under the host and path, with the port and query string left out, so at `/` the slot is shared with every other local tool that has ever opened a window on 127.0.0.1. The token gate that guards `/` guards `/app` too |
 | **The window shape is remembered for the app window only** | Chrome refuses `resizeTo` on an ordinary browser window, and a tab has no window of its own. Measured 2026-09-10 |
 | **Not registering as an installed Chrome app** | It was the route to a true maximize, and it was rejected: Chrome would add a second Start Menu entry, and that entry would be broken, because it only opens a URL and the server exits about two and a half minutes after the last page closes. The app's own shortcut has to stay the launcher. *Reverses if* the app ever gains a way to start the server from a URL |
+
+## Both themes are written out
+
+**Decided 1.1.0, and moved here from `CLAUDE.md` on 2026-09-10 when that file needed a line back.**
+The role colours (`--on`, `--nameonly`, `--slash`, `--danger`, `--accent`) were drawn for a near
+black background and fall below 4.5:1 on white, the amber worst of all. So `public/styles.css`
+declares the light values **twice**: once under `prefers-color-scheme` for anyone who has never
+opened Settings, and once under `:root[data-theme="light"]` for anyone who has chosen. Collapsing
+those into one costs either a flash of the wrong theme on load or an override the user cannot undo.
+*Does not reverse.* **Check any new colour against both.**
 
 ## Writing
 
