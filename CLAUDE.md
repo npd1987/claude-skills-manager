@@ -18,6 +18,12 @@ cannot afford to lose.
 **That is the whole cold start.** Open a feature document when you are about to touch that
 feature, never to find out what happened last.
 
+**If this copy has no `docs/` folder**, it was made from the published package, which carries the
+app and not the project's working notes: they are 27kB nobody running the app needs. They are in the
+repository, at <https://github.com/npd1987/claude-skills-manager/tree/main/docs>, and a copy made by
+`git clone` has them on disk. Read them there and carry on. **Nothing in the app depends on them**,
+so their absence breaks nothing except this file's first instruction.
+
 | What you want | Where it is |
 | :--- | :--- |
 | The current state of play | [docs/HANDOFF.md](docs/HANDOFF.md) |

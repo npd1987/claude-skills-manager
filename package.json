@@ -42,8 +42,7 @@
     "install-shortcut.ps1",
     "Skills.cmd",
     "CLAUDE.md",
-    "CONTRIBUTING.md",
-    "docs/*.md"
+    "CONTRIBUTING.md"
   ],
   "engines": {
     "node": ">=18"
