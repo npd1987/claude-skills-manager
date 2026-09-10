@@ -11,6 +11,25 @@ reading it.
 
 ---
 
+## `windowsHide` IS A SHOW STATE, NOT A CONSOLE SWITCH, AND `explorer.exe` OBEYS IT. 2026-09-10
+
+`windowsHide: true` reads like "suppress the console window if there is one", so it looks free to
+set on every spawn. It is not. Node passes it as the child's **initial show state**, and a GUI
+program is free to hand that state to the window it opens. `explorer.exe` does exactly that, so
+`reveal()` spawned a real Explorer window that was never shown, returned true, and the user's click
+did nothing. Seventeen invisible windows had accumulated before it was reported.
+
+This is the same flag as the console lesson below, seen from its other side: there, `windowsHide`
+failed to hide a console it was expected to hide; here, it hid a window nobody meant to hide. **Set
+it only on the specific spawn that needs it, never on a shared helper.** `detached()` is shared by
+the browser launch, the reveal and the Linux desktop database refresh, and one flag on it broke a
+feature two of them do not use.
+
+**Grep for the effect, not the process.** A hidden window is invisible to every ordinary check and
+the process list looks correct, because the process really did start. `Shell.Application.Windows()`
+lists open Explorer windows with a `Visible` property on each, and that is what proved both the bug
+and the fix.
+
 ## CUT THE TAG LAST, AND KNOW WHAT EACH PUBLISH ACTUALLY PACKS. 1.1.1
 
 `npm publish` packs the working tree and never a tag, so a tag cut at the version bump marks code

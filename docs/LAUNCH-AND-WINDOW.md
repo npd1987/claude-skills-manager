@@ -2,7 +2,8 @@
 
 Everything about the window the app appears in: which kind of window it asks the browser for, what
 the browser draws on its tab and taskbar button, and how it remembers the shape it was left in.
-Built 2026-09-10, and finished the same day: section 4 was the last of it.
+Built 2026-09-10, and finished the same day: section 4 was the last of it. **Section 6 is the
+regression that round shipped, found and fixed on 2026-09-10 and released as 1.1.3.**
 
 ---
 
@@ -144,6 +145,10 @@ spawned by `hidden()` instead, which is `detached()` without the detaching: `std
 `windowsHide: true`, then `unref`. Nothing appears on screen, and the child not outliving its parent
 costs nothing to a helper that acts on a window the parent is serving anyway.
 
+**`windowsHide` was also added to `detached()` at the same time, and that part was wrong.** It broke
+the reveal, shipped in 1.1.1 and 1.1.2, and is section 6. The comment written beside it here, *"It
+has no effect on a GUI program"*, is **SUPERSEDED**: it has a very large effect on `explorer.exe`.
+
 **Started at launch, not on request.** The helper polls for the window by title, so it can be started
 before there is one. `openApp()` starts it as it opens the browser, whenever the saved shape is a
 maximized one, which moves the process spawn and the `Add-Type` compile out of the visible part of
@@ -179,8 +184,51 @@ was. OI-3.
 | :--- | :--- |
 | `lib/prefs.js` | New. Reading and writing `prefs.json`, which `lib/updates.js` used to own privately and two things now need |
 | `lib/updates.js` | Rewired onto `lib/prefs.js`, keeping only its own defaults |
-| `lib/platform.js` | Browser detection for three desktops, `openBrowser(url, mode)`, `browserModes`, `maximizeWindow`, and `hidden()`, which is how the maximize helper is spawned |
+| `lib/platform.js` | Browser detection for three desktops, `openBrowser(url, mode)`, `browserModes`, `maximizeWindow`, and `hidden()`, which is how the maximize helper is spawned. **1.1.3 took `windowsHide` back off `detached()`**, section 6 |
 | `server.js` | `POST /api/launch-mode`, `POST /api/shape`, `POST /api/maximize`, the `launch` block in the state payload, the icon routes, and the app path |
 | `public/app.js` | The How it opens section, the shape measuring and restoring, the maximize request |
 | `public/index.html` | The favicon link, the icon as the brand mark, the modal header |
 | `public/styles.css` | The struck-out choice, the pinned modal header, the brand mark |
+
+## 6. The regression this round shipped, and the fix. 1.1.3
+
+**The symptom.** Under a skill card, *Folder* did nothing. So did every other reveal in the app: the
+*Open* links in Settings for the skills folder and the settings file, and the *Open folder* buttons
+in the fork flow. The user reported it as a regression and was right; it worked before section 4's
+round and had been broken by it, in 1.1.1 and again in 1.1.2.
+
+**It was not doing nothing.** `reveal()` was opening a real Explorer window every time and never
+showing it. Seventeen of them had accumulated on the user's machine before it was reported, at the
+skills the user had been clicking. Nothing on screen, nothing in a log, and a process list that
+looks entirely correct, because the process really did start.
+
+**The cause.** Section 4's round added `windowsHide: true` to `detached()` in `lib/platform.js`,
+beside a comment saying it has no effect on a GUI program. That is not what the flag is. Node passes
+it as the child's **initial show state**, and a GUI program may hand that state straight to the
+window it opens. `explorer.exe` does exactly that. The flag was only ever wanted for the PowerShell
+maximize helper, and the same round had already moved that helper to `hidden()`, so by the time it
+landed `detached()` was carrying a flag none of its own callers needed.
+
+**The fix** is to take it back off `detached()`, which restores what every caller there did before
+1.1.1. `hidden()` keeps it, so the maximize is untouched. The comment now says why the flag must not
+come back.
+
+**How it was proved, both ways.** `Shell.Application.Windows()` lists open Explorer windows with a
+`Visible` property on each, which is the only cheap way to see a window that is not being drawn:
+
+| | Explorer window created | `Visible` |
+| :--- | :--- | :--- |
+| Before, `detached()` with `windowsHide: true` | Yes | **False** |
+| After, through `platform.reveal()` directly | Yes | **True** |
+| After, through `POST /api/reveal` on a running server, as the button does | Yes | **True** |
+
+The seventeen orphans were closed with `.Quit()` on the hidden ones only, and the three windows the
+user had open themselves were left alone.
+
+**Windows only, again.** The macOS `open -R` and the Linux `xdg-open` branches of `reveal()` never
+had the flag applied in a way that could matter, because `windowsHide` does nothing off Windows, so
+those two were never broken and are still unrun for every other reason. OI-3.
+
+**What this cost, and the general form of it, is in [LESSONS.md](LESSONS.md)**: a flag set on a
+shared spawn helper reaches callers that were never considered, and `detached()` is shared by the
+browser launch, the reveal and one Linux desktop call.

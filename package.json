@@ -1,6 +1,6 @@
 {
   "name": "claude-skills-manager",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "displayName": "Claude Skills",
   "description": "A small local web app for your Claude Code skills. See what you have installed and turn each one on, off, or slash-only without hand-editing settings.json",
   "keywords": [

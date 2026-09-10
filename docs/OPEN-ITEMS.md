@@ -18,6 +18,33 @@ to copy it forward.
 
 ## Open
 
+### OI-12. 1.1.1 and 1.1.2 both ship a broken Folder button
+
+**Opened 2026-09-10, closable by the user, by publishing 1.1.3 to npm.** Every reveal in the app is
+dead in the two currently published versions: *Folder* on a skill card, the *Open* links in Settings,
+and *Open folder* in the fork flow. It is worse than inert, because each click opens an Explorer
+window that is never shown, so a user who clicks it a few times accumulates invisible windows they
+cannot see or close. The cause and the fix are in [LAUNCH-AND-WINDOW.md](LAUNCH-AND-WINDOW.md)
+section 6. **The fix is committed, pushed, tagged `v1.1.3` and released on GitHub; it is not on npm
+until the account holder publishes**, which cannot be automated from here because the account uses a
+passkey and waits for a browser approval. Until then, anyone on 1.1.1 or 1.1.2 has the bug. Nobody
+but the user is known to be running either version.
+
+**The commands, run from the repository root on a clean tree, in this order:**
+
+```
+git status
+npm publish
+npm view claude-skills-manager version
+```
+
+`git status` first because **`npm publish` packs the working tree, not the tag**: anything
+uncommitted goes into the package and anything committed after `v1.1.3` makes the tag a lie. The
+tree was clean and matched the tag when it was cut. `npm publish` prints a URL and waits for the
+browser approval. The third command is the check that it landed, and it should say `1.1.3`.
+
+**Then close this item** by moving it to Closed with the date and what the registry served.
+
 ### OI-2. Prove the installer, which is now possible
 
 **Opened 1.1.0, closable by the user.** The detached child in `lib/apply-update.js` waits for the app
