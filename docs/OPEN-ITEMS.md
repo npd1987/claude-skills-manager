@@ -64,12 +64,15 @@ fabricated demo skills has to be rebuilt first.
 address, so it filters mail but conceals nothing. The user was told and left it. Changing it properly
 means another publish-then-unpublish cycle.
 
-### OI-9. This round's work is uncommitted and unreleased
+### OI-9. This round's work is on GitHub and not released
 
-**Opened 2026-09-10, closable by the user.** Everything from the 2026-09-10 session is in the working
-tree: the launch mode setting, the icon wiring, the Settings header, the window shape memory, and
-this document set. Nothing has been committed, pushed or published. The user has not asked for any of
-the three.
+**Opened 2026-09-10, narrowed 2026-09-10, closable by the user.** The 2026-09-10 work is now two
+commits on `main` and pushed to `npd1987/claude-skills-manager`: the launch mode setting, the icon
+wiring, the Settings header, the window shape memory, the maximize, and this document set. **What is
+left is the release.** npm still has 1.1.0, so anybody installing normally gets none of this, and the
+version in `package.json` is still 1.1.0 with no unreleased number. Publishing has to be done by the
+account holder in person, because the npm account uses a passkey and `npm publish` waits on a browser
+approval. See [LESSONS.md](LESSONS.md).
 
 ### OI-10. Quit cannot be undone from the tab it leaves behind
 
