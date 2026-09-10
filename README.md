@@ -32,6 +32,20 @@ stops it at once. Closing the tab takes a little longer: the page says goodbye o
 its way out, and the server then stops at its next check, which is within about
 half a minute. It never lingers in the background, and reloading is safe.
 
+### A shortcut instead of a command
+
+If you would rather launch it from your Start menu, Dock or app launcher,
+install it properly first so it has a permanent home:
+
+```bash
+npm i -g claude-skills-manager
+claude-skills-manager install-shortcut
+```
+
+That writes a Start-menu entry on Windows, an app bundle in `~/Applications` on
+macOS, and a `.desktop` entry on Linux. Add `--desktop` for a desktop copy too,
+and `uninstall-shortcut` removes them again.
+
 ### How it opens
 
 By default the app opens in a tab of whatever browser you already have running.
@@ -61,20 +75,6 @@ the first time, and on Linux it needs `wmctrl`.
 **Settings** has an **Appearance** choice: follow your system, or pin light or
 dark. Both are drawn properly rather than one being the other with the colours
 inverted, so nothing goes faint in either.
-
-### A shortcut instead of a command
-
-If you would rather launch it from your Start menu, Dock or app launcher,
-install it properly first so it has a permanent home:
-
-```bash
-npm i -g claude-skills-manager
-claude-skills-manager install-shortcut
-```
-
-That writes a Start-menu entry on Windows, an app bundle in `~/Applications` on
-macOS, and a `.desktop` entry on Linux. Add `--desktop` for a desktop copy too,
-and `uninstall-shortcut` removes them again.
 
 ### Make it your own
 
