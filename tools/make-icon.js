@@ -16,6 +16,14 @@ const path = require('path');
 const zlib = require('zlib');
 
 const ICO_SIZES = [16, 24, 32, 48, 64, 128, 256];
+// Entries this size and up go into the .ico as PNG rather than as raw pixels.
+// An .ico entry is uncompressed BGRA by default, so the 256 px one costs 262kB
+// on its own and the whole file came to 372kB, which was half the published
+// package. Windows has read PNG entries since Vista, Chrome reads them for a
+// favicon, and the same drawing compresses to about 9kB. The small sizes stay
+// raw: they are a few kB each, and compressing them would save nothing worth
+// the wider compatibility.
+const ICO_PNG_FROM = 128;
 const PNG_SIZE = 256;
 // macOS picks whichever of these fits the context it is drawing.
 const ICNS_ENTRIES = [
@@ -260,10 +268,15 @@ function build() {
   const written = [];
 
   const ico = buildICO(
-    ICO_SIZES.map((size) => ({ size, data: toDIB(size, toBGRABottomUp(size, pixels.get(size))) }))
+    ICO_SIZES.map((size) => ({
+      size,
+      data: size >= ICO_PNG_FROM
+        ? toPNG(size, pixels.get(size))
+        : toDIB(size, toBGRABottomUp(size, pixels.get(size))),
+    }))
   );
   fs.writeFileSync(path.join(outDir, 'icon.ico'), ico);
-  written.push(`icon.ico   ${ICO_SIZES.join(', ')} px`);
+  written.push(`icon.ico   ${ICO_SIZES.join(', ')} px, PNG from ${ICO_PNG_FROM} up`);
 
   const png = toPNG(PNG_SIZE, pixels.get(PNG_SIZE));
   fs.writeFileSync(path.join(outDir, 'icon.png'), png);
