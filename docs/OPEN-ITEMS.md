@@ -64,16 +64,6 @@ fabricated demo skills has to be rebuilt first.
 address, so it filters mail but conceals nothing. The user was told and left it. Changing it properly
 means another publish-then-unpublish cycle.
 
-### OI-9. This round's work is on GitHub and not released
-
-**Opened 2026-09-10, narrowed 2026-09-10, closable by the user.** The 2026-09-10 work is now two
-commits on `main` and pushed to `npd1987/claude-skills-manager`: the launch mode setting, the icon
-wiring, the Settings header, the window shape memory, the maximize, and this document set. **What is
-left is the release.** npm still has 1.1.0, so anybody installing normally gets none of this, and the
-version in `package.json` is still 1.1.0 with no unreleased number. Publishing has to be done by the
-account holder in person, because the npm account uses a passkey and `npm publish` waits on a browser
-approval. See [LESSONS.md](LESSONS.md).
-
 ### OI-10. Quit cannot be undone from the tab it leaves behind
 
 **Opened 2026-09-10, closable by the user.** Quit stops the server, and the page it leaves says the
@@ -110,6 +100,20 @@ is probably a marker the launcher puts in the URL rather than anything measured 
 ---
 
 ## Closed
+
+### OI-9. This round's work is uncommitted and unreleased
+
+**Opened 2026-09-10. Closed 2026-09-10 by the user.** Committed to `main`, pushed to
+`npd1987/claude-skills-manager`, tagged `v1.1.1`, and **published to npm by the user at 06:15**.
+Verified by downloading what the registry serves: 1.1.1, 29 files, 381kB unpacked, carrying the 48kB
+icon and no documents. `npx claude-skills-manager@latest` and `npm i -g claude-skills-manager@latest`
+both give this round's work from now on, and anyone on 1.1.0 who allowed the update check is offered
+it within a day.
+
+**The tag had to be moved after the fact.** It was cut at the version bump and two commits landed
+after it, so it pointed at code that was never published. `npm publish` packs the working tree and
+never the tag, so the package was right and only the marker was wrong. **Cut the tag last, or move
+it before publishing.**
 
 ### OI-1. The app window does not open truly maximized
 

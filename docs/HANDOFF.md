@@ -7,7 +7,7 @@ method in **setup** mode.
 
 | | |
 | :--- | :--- |
-| **START HERE NEXT** | **Ask whether this should be released**, OI-9. It is committed and pushed, and npm still has 1.1.0, so nobody installing normally has any of it. After that the queue is OI-2, the installer, which needs the user's hands |
+| **START HERE NEXT** | **Offer to write the GitHub release for `v1.1.1`.** It is the one thing 1.1.1 is missing, and without it the update the app offers has no notes. After that the queue is OI-2, the installer, which is now genuinely testable and needs the user's hands |
 | **WHAT THE USER SAID ABOUT THE WORK** | On the launch setting and the icon: it works and looks right. On the maximize, before it landed: *"It really should be the real maximized window. Like, not like a fake version."* Then, watching the first version of the fix: *"you could see the actual, like, power shell window in front of it when it maximized. So it was not clean looking."* Both are fixed and measured. **Nothing since then has been seen by the user**, so the maximize is theirs to accept |
 | **WHAT THIS SESSION BUILT, IN ONE LINE EACH** | See section 2. All of it is in [LAUNCH-AND-WINDOW.md](LAUNCH-AND-WINDOW.md), except the rename design, which is [RENAME-SKILL.md](RENAME-SKILL.md), and this document set |
 | **STILL OWED** | OI-1 the maximize, then OI-2 the installer and OI-3 the platform gap. All in [OPEN-ITEMS.md](OPEN-ITEMS.md) |
@@ -19,7 +19,7 @@ method in **setup** mode.
 | Branch | `main`. `git log --oneline -5` is the truth about commits, never an id written here |
 | Working tree | **Committed and pushed.** Two commits: the app, then the documents. `git status` is the truth |
 | Pushed | **YES**, to `npd1987/claude-skills-manager`, branch `main`, which is public |
-| Released | NO. The shipped version is **1.1.0**, published 2026-08-01. `package.json` is the truth |
+| Released | **YES. 1.1.1, published 2026-09-10 by the user.** `npm view claude-skills-manager version` is the truth |
 | Build | **There is no build step.** `node --check` passes on every file this round touched: `server.js`, `lib/platform.js`, `lib/prefs.js`, `lib/updates.js`, `public/app.js` |
 | Checks run | The by-hand list in [CLAUDE.md](../CLAUDE.md) *Testing changes*: a skill state changed and restored, two backups confirmed in `~/.claude/backups/`, `settings.json` still valid JSON and byte identical afterwards. The launch setting, the icon, the modal header, the window shape restore and the maximize were each driven and measured, the maximize by watching the real window every 120ms through a real launch |
 | Checks not run | **Anything on macOS or Linux**, which is every platform path added this round except the Windows one. The installer, still never run, OI-2 |
@@ -47,8 +47,7 @@ method in **setup** mode.
 
 ## 3. The queue
 
-1. **OI-9, the release.** The work is committed and pushed. npm is still on 1.1.0, and only the
-   account holder can publish. Ask.
+1. **The GitHub release for `v1.1.1`.** npm has it, GitHub has the tag, and nothing describes it.
 2. **OI-2, prove the installer.** The biggest untested thing in the repository, and testable now that
    two versions exist. Needs the user, because it means a real global install.
 3. **OI-3, macOS and Linux.** Now larger than it was: this round added browser detection and a window
@@ -85,10 +84,11 @@ method in **setup** mode.
 
 ## 7. What is committed, pushed and released
 
-- **Committed:** YES. Two commits, the app and then the documents.
-- **Pushed:** YES, to `npd1987/claude-skills-manager` on `main`.
-- **Released:** NO. npm still has 1.1.0, so a normal install gets none of this. Publishing needs the
-  account holder in person, and was not asked for. OI-9.
+- **Committed:** YES.
+- **Pushed:** YES, to `npd1987/claude-skills-manager` on `main`, tagged `v1.1.1`.
+- **Released:** **YES, 1.1.1 on npm.** Verified from the registry: 29 files, 381kB unpacked.
+- **Still missing: a GitHub release on `v1.1.1`.** Until there is one, the app offers 1.1.1 with no
+  notes to show, because *What's new* reads them from GitHub and a bare tag has nothing.
 
 ## 8. What no check can say
 
