@@ -1160,6 +1160,9 @@ function paintSettings() {
   const copy = data.app && data.app.copy;
 
   paintSetup('Settings', `
+    ${updatesSection()}
+    ${rollbackSection()}
+
     <section class="settings-section">
       <h5>Appearance</h5>
       <p>Light and dark are both written out properly, so nothing goes faint in either one.</p>
@@ -1172,8 +1175,6 @@ function paintSettings() {
       </div>
     </section>
 
-    ${updatesSection()}
-    ${rollbackSection()}
     ${launchSection()}
 
     <section class="settings-section">
