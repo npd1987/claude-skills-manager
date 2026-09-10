@@ -91,6 +91,22 @@ Also measured while looking: **closing the window does not stop the server immed
 between 8 and 23 seconds, so a relaunch inside about 20 seconds reaches the old one. Nobody has said
 that is a problem, but it is not what the interface implies.
 
+### OI-11. Any second page overwrites the app window's saved shape
+
+**Opened 2026-09-10, closable by a session.** `reportShape()` in `public/app.js` is gated on
+`ownsWindow()`, which is true whenever the launch setting is *An app window*, whatever kind of window
+**this** page happens to be in. The browser reports an app window as an ordinary one and there is no
+property that tells them apart, which is why it was written that way. The consequence: open the app a
+second time in a tab, or load its address in any other window while the setting is *An app window*,
+and that page's own size is saved as the window shape on its heartbeat and again on its way out. The
+next launch then opens the real window at the size of a tab. The same page will also ask for a
+maximize it has no business asking for.
+
+Found on 2026-09-10 while looking for a way to check a Settings change against the running app, and
+the reason that check was not done that way. Nobody has hit it in normal use, because normal use is
+one window. A fix has to distinguish the window the app opened from any other, and the honest signal
+is probably a marker the launcher puts in the URL rather than anything measured from the window.
+
 ---
 
 ## Closed
