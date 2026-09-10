@@ -3,11 +3,11 @@
 Written to be picked up cold, and **deliberately short**. Last updated 2026-09-10, by the handoff
 method in **setup** mode.
 
-## 0. Start here. **The app now opens how you choose it to, remembers its shape, and truly maximizes**
+## 0. Start here. **1.1.1 is published, and the round that produced it is closed**
 
 | | |
 | :--- | :--- |
-| **START HERE NEXT** | **Offer to write the GitHub release for `v1.1.1`.** It is the one thing 1.1.1 is missing, and without it the update the app offers has no notes. After that the queue is OI-2, the installer, which is now genuinely testable and needs the user's hands |
+| **START HERE NEXT** | **OI-2, prove the installer.** It is the biggest untested thing in the repository and it is now genuinely testable: 1.1.0 and 1.1.1 both exist, so a global install can be sent forwards and back. It needs the user's hands |
 | **WHAT THE USER SAID ABOUT THE WORK** | On the launch setting and the icon: it works and looks right. On the maximize, before it landed: *"It really should be the real maximized window. Like, not like a fake version."* Then, watching the first version of the fix: *"you could see the actual, like, power shell window in front of it when it maximized. So it was not clean looking."* Both are fixed and measured. **Nothing since then has been seen by the user**, so the maximize is theirs to accept |
 | **WHAT THIS SESSION BUILT, IN ONE LINE EACH** | See section 2. All of it is in [LAUNCH-AND-WINDOW.md](LAUNCH-AND-WINDOW.md), except the rename design, which is [RENAME-SKILL.md](RENAME-SKILL.md), and this document set |
 | **STILL OWED** | OI-1 the maximize, then OI-2 the installer and OI-3 the platform gap. All in [OPEN-ITEMS.md](OPEN-ITEMS.md) |
@@ -47,7 +47,8 @@ method in **setup** mode.
 
 ## 3. The queue
 
-1. **The GitHub release for `v1.1.1`.** npm has it, GitHub has the tag, and nothing describes it.
+1. **OI-2, prove the installer.** Newly testable, because there are now two versions to move
+   between. Needs a real global install, so it needs the user.
 2. **OI-2, prove the installer.** The biggest untested thing in the repository, and testable now that
    two versions exist. Needs the user, because it means a real global install.
 3. **OI-3, macOS and Linux.** Now larger than it was: this round added browser detection and a window
@@ -87,8 +88,8 @@ method in **setup** mode.
 - **Committed:** YES.
 - **Pushed:** YES, to `npd1987/claude-skills-manager` on `main`, tagged `v1.1.1`.
 - **Released:** **YES, 1.1.1 on npm.** Verified from the registry: 29 files, 381kB unpacked.
-- **Still missing: a GitHub release on `v1.1.1`.** Until there is one, the app offers 1.1.1 with no
-  notes to show, because *What's new* reads them from GitHub and a bare tag has nothing.
+- **Released on GitHub too**, on `v1.1.1`, so *What's new* has notes to show. Checked through the
+  same endpoint `lib/updates.js` uses: 200, not a draft, 864 characters of body.
 
 ## 8. What no check can say
 
