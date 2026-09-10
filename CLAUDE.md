@@ -8,6 +8,27 @@ If you are reading this inside somebody's own copy, they made it through
 Read the invariants below before you do. Several of them protect a file the user
 cannot afford to lose.
 
+## Start here. Two files, then start work
+
+1. **Read [docs/HANDOFF.md](docs/HANDOFF.md).** It is the current state of play: what the last
+   session did, what is queued, what is waiting on you, and what to do next.
+2. **Read the rest of this file.** How to build, where the code is, and the facts that stop a
+   wrong turn.
+
+**That is the whole cold start.** Open a feature document when you are about to touch that
+feature, never to find out what happened last.
+
+| What you want | Where it is |
+| :--- | :--- |
+| The current state of play | [docs/HANDOFF.md](docs/HANDOFF.md) |
+| Things owed and not done, across sessions | [docs/OPEN-ITEMS.md](docs/OPEN-ITEMS.md). Never rewritten, never pruned |
+| Locked decisions | [docs/DECISIONS.md](docs/DECISIONS.md) |
+| Traps that outlive the round that found them | [docs/LESSONS.md](docs/LESSONS.md), by grep |
+| The last three states of play | [docs/HANDOFF-HISTORY.md](docs/HANDOFF-HISTORY.md) |
+| How this project is handed off | [docs/HANDOFF-METHOD.md](docs/HANDOFF-METHOD.md) |
+| How the user works, and what they expect | [docs/WORKING-WITH-THE-USER.md](docs/WORKING-WITH-THE-USER.md) |
+| How a feature works and why | That feature's own document, listed in docs/HANDOFF.md section 9 |
+
 ## Run it
 
 ```bash
@@ -157,33 +178,6 @@ Node 18+. `server.js` uses global `fetch` and `AbortSignal.timeout`.
   `applyEntry` in `public/app.js`.
 - **The server stops on its own** once no page has checked in for ~2.5 minutes,
   because a shortcut launch leaves no window to close.
-
-## The handoff document
-
-[docs/HANDOFF.md](docs/HANDOFF.md) carries the state of play between sessions:
-what is verified and what is not, which decisions still bind, what is open, and
-the traps that are not invariants. When asked to **"do the handoff document"**:
-
-1. **Re-read reality first.** Current `package.json` version, `git log -1`,
-   `git status`. Never carry a claim forward without checking it.
-2. **Regenerate every section**, rather than editing around what is there. Only
-   the session log is append-only, so add one line, newest first.
-3. **Restamp the header** with today's date and the current version. No commit
-   SHA, because a stamp cannot name the commit that writes it, so matching on one
-   would report staleness forever. Date plus version is checkable and honest.
-4. **Write down only what the repository cannot say.** If a fact lives in this
-   file, the README, or `git log`, link to it instead of copying it.
-5. **No line numbers, no code excerpts, no file trees.** They rot fastest, and
-   the file map above already exists.
-6. **Version-stamp every verification claim.** Say "unverified as of 1.0.1",
-   never "works on macOS". Overstating here is the one failure that matters.
-7. **The one-minute rule.** If a claim cannot be re-checked against the repo in
-   under a minute, leave it out.
-
-This is deliberately *not* a skill, because a global `handoff` skill already
-exists and does something different, compacting a conversation into a
-throwaway file in the OS temp directory. A project skill of the same name would
-shadow it here.
 
 ## Testing changes
 
